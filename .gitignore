@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.env
+data/raw/*
+data/processed/*
+data/splits/*.csv
+!data/**/.gitkeep
+checkpoints/*
+!checkpoints/.gitkeep
+runs/
+outputs/*
+!outputs/.gitkeep

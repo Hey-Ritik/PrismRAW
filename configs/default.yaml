@@ -1,0 +1,22 @@
+project:
+  problem_id: P2
+  seed: 42
+data:
+  manifest: data/splits/manifest.csv
+  split_by: scene_id
+  patch_size: 256
+classical:
+  # Provisional values; replace with validated camera metadata.
+  bayer_pattern: RGGB
+  denoise_strength: 0.03
+  sharpen_strength: 0.15
+model:
+  base_channels: 16
+training:
+  batch_size: 8
+  learning_rate: 0.0002
+  epochs: 30
+evaluation:
+  batch_size: 1
+  warmup_iterations: 5
+  timed_iterations: 20
