@@ -15,6 +15,8 @@ Initial real-data validation uses a clean RAW and metadata from the SIDD authors
 ## Training
 Implemented: conditioned RGB residual U-Net and learned-only packed-Bayer U-Net with subpixel RGB reconstruction. Training uses linear-RGB L1 plus gradient consistency, Adam, seeded CPU execution, and validation-only checkpoint selection. Learned-only camera inputs include white balance, colour matrix, and CFA phase; these are network features, not classical preprocessing operations. `configs/expanded-hybrid.yaml` and `configs/expanded-learned.yaml` execute 20 epochs on the same expanded data. Targets use an approximate fixed transform of clean RAW. No perceptual/explicit colour loss or augmentation is included. Larger training remains necessary; both models underperform classical on the exploratory pilot test.
 
+Updated development protocol: `configs/context-*.yaml` uses schema 3 inputs with identical four-pixel RAW context for all methods and explicit central output cropping. A resize/convolution decoder (checkpoint format `prismraw-bayer-resize-v2`) is compared against the preserved subpixel-v1 decoder using validation only. V2 improves validation PSNR and reduces periodic phase bias, but still oversmooths. The inspected exploratory test is not rescored for this architecture change. Historical reports remain unchanged.
+
 ## Evaluation
 PSNR, SSIM, Delta E, LPIPS; parameters, exported size, latency, peak memory. Record target encoding, metric ranges, hardware, image resolution, warm-up and timing protocol.
 

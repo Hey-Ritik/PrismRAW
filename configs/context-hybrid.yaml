@@ -1,0 +1,11 @@
+manifest: data/processed/context/manifest.json
+output: runs/context-hybrid
+checkpoint: checkpoints/context-hybrid.pt
+model_kind: hybrid
+seed: 42
+epochs: 20
+batch_size: 2
+learning_rate: 0.0002
+base_channels: 16
+threads: 2
+device: cpu

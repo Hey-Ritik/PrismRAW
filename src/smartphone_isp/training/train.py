@@ -15,7 +15,8 @@ import yaml
 
 from smartphone_isp.data.paired import PairedDataset
 from smartphone_isp.models.residual_unet import ResidualUNet
-from smartphone_isp.models.raw_to_rgb import RawToRGBNet
+from smartphone_isp.models.raw_to_rgb import RawToRGBNet, ResizeRawToRGBNet
+from smartphone_isp.training.alignment import crop_prediction
 
 
 def objective(prediction, target):
@@ -25,13 +26,14 @@ def objective(prediction, target):
     return reconstruction + 0.05 * (dx + dy)
 
 
-def validation_loss(model, loader, device):
+def validation_loss(model, loader, device, context=0):
     model.eval()
     total, count = 0.0, 0
     with torch.inference_mode():
         for source, conditions, target in loader:
             source, conditions, target = [value.to(device) for value in (source, conditions, target)]
-            total += F.l1_loss(model(source, conditions), target).item() * len(source)
+            prediction = crop_prediction(model(source, conditions), target, context)
+            total += F.l1_loss(prediction, target).item() * len(source)
             count += len(source)
     return total / count
 
@@ -50,12 +52,17 @@ def train(config):
     torch.use_deterministic_algorithms(True)
     device = torch.device(config["device"])
     kind = config.get("model_kind", "hybrid")
+    architecture = config.get("architecture", "subpixel-v1")
+    if kind == "learned" and architecture not in {"subpixel-v1", "resize-v2"}:
+        raise ValueError("Unknown learned architecture")
+    manifest = json.loads(Path(config["manifest"]).read_text(encoding="utf-8"))
+    context = int(manifest.get("input_context", 0))
     train_data = PairedDataset(config["manifest"], "train", kind)
     val_data = PairedDataset(config["manifest"], "validation", kind)
     train_loader = DataLoader(train_data, batch_size=config["batch_size"], shuffle=True,
                               generator=torch.Generator().manual_seed(seed), num_workers=0)
     val_loader = DataLoader(val_data, batch_size=config["batch_size"], num_workers=0)
-    model_type = RawToRGBNet if kind == "learned" else ResidualUNet
+    model_type = (ResizeRawToRGBNet if architecture == "resize-v2" else RawToRGBNet) if kind == "learned" else ResidualUNet
     model = model_type(config["base_channels"]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
     output = Path(config["output"])
@@ -63,12 +70,12 @@ def train(config):
     checkpoint_path = Path(config["checkpoint"])
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_hash = hashlib.sha256(Path(config["manifest"]).read_bytes()).hexdigest()
-    initial_val = validation_loss(model, val_loader, device)
+    initial_val = validation_loss(model, val_loader, device, context)
     report = {"scope": "Small CPU pilot; no benchmark/generalization claim", "config": config,
               "manifest_sha256": manifest_hash, "torch_version": str(torch.__version__),
               "initial_validation_l1": initial_val, "epochs": [],
               "selection": "Lowest validation linear-RGB L1 among trained epochs; test not read during training",
-              "train_samples": len(train_data), "validation_samples": len(val_data)}
+              "input_context": context, "train_samples": len(train_data), "validation_samples": len(val_data)}
     best = float("inf")
     started = time.perf_counter()
     for epoch in range(1, config["epochs"] + 1):
@@ -77,14 +84,14 @@ def train(config):
         for source, conditions, target in train_loader:
             source, conditions, target = [value.to(device) for value in (source, conditions, target)]
             optimizer.zero_grad(set_to_none=True)
-            loss = objective(model(source, conditions), target)
+            loss = objective(crop_prediction(model(source, conditions), target, context), target)
             if not torch.isfinite(loss):
                 raise ValueError("Nonfinite training loss")
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             total += loss.item() * len(source)
-        val = validation_loss(model, val_loader, device)
+        val = validation_loss(model, val_loader, device, context)
         if not np.isfinite(val):
             raise ValueError("Nonfinite validation loss")
         row = {"epoch": epoch, "train_objective": total / len(train_data), "validation_l1": val}
@@ -94,9 +101,12 @@ def train(config):
             report["best_epoch"] = epoch
             temporary = checkpoint_path.with_suffix(".tmp")
             checkpoint_format = "prismraw-bayer-v1" if kind == "learned" else "prismraw-residual-v1"
+            if kind == "learned" and architecture == "resize-v2":
+                checkpoint_format = "prismraw-bayer-resize-v2"
             torch.save({"format": checkpoint_format, "base_channels": config["base_channels"],
                         "state_dict": model.state_dict(), "epoch": epoch, "validation_l1": val,
                         "manifest_sha256": manifest_hash, "config": config,
+                        "input_context": context,
                         "target": "Approximate fixed rendering of clean SIDD-CC RAW"}, temporary)
             temporary.replace(checkpoint_path)
         report["elapsed_seconds"] = time.perf_counter() - started

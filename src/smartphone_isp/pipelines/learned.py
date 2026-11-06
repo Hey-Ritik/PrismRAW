@@ -6,7 +6,7 @@ import torch
 
 from smartphone_isp.classical.stages import normalize_raw
 from smartphone_isp.data.bayer import pack_bayer
-from smartphone_isp.models.raw_to_rgb import RawToRGBNet
+from smartphone_isp.models.raw_to_rgb import RawToRGBNet, ResizeRawToRGBNet
 from smartphone_isp.pipelines.classical import render_linear
 
 
@@ -24,9 +24,10 @@ def calibration_vector(metadata):
 
 def load_model(checkpoint, device="cpu"):
     document = torch.load(checkpoint, map_location=device, weights_only=True)
-    if document.get("format") != "prismraw-bayer-v1" or document.get("epoch", 0) < 1:
+    if document.get("format") not in {"prismraw-bayer-v1", "prismraw-bayer-resize-v2"} or document.get("epoch", 0) < 1:
         raise ValueError("Expected a trained PrismRAW Bayer-to-RGB checkpoint")
-    model = RawToRGBNet(document["base_channels"]).to(device)
+    model_type = ResizeRawToRGBNet if document["format"] == "prismraw-bayer-resize-v2" else RawToRGBNet
+    model = model_type(document["base_channels"]).to(device)
     model.load_state_dict(document["state_dict"])
     model.eval()
     return model, document

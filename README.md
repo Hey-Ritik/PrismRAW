@@ -4,7 +4,7 @@ Hybrid smartphone RAW-to-RGB reconstruction combining classical image processing
 
 ## Current status
 
-All three array-input inference paths now execute: classical, learned-only Bayer-to-RGB, and conditioned hybrid refinement. The expanded CPU pilot has five physical scenes and separate training, validation, and test scenes. Classical remains strongest; both learned paths are undertrained and the learned-only pilot shows substantial reconstruction artifacts. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. Larger training, complete evaluation, optimized export, and hosted UI remain pending.
+All three array-input inference paths now execute: classical, learned-only Bayer-to-RGB, and conditioned hybrid refinement. The expanded CPU pilot has five physical scenes and separate training, validation, and test scenes. A revised resize decoder reduces periodic artifacts in validation, and a new context protocol gives every method the same RAW boundary information. Classical remains strongest; both neural paths still need quality improvements. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. Larger training, complete evaluation, optimized export, and hosted UI remain pending.
 
 ## Setup (PowerShell)
 
@@ -136,3 +136,23 @@ python -m smartphone_isp.cli learned --input data/processed/sidd-cc-subset/noisy
 ```
 
 The standalone default exposure is 1; use the evaluator for the shared three-way display settings. No adaptive classical preprocessing is used in the learned-only path.
+
+## Shared-context decoder comparison (validation only)
+
+The earlier pilot reports are historical. Use the following protocol for further development: both networks receive the same four-pixel RAW border as classical processing, and their output border is removed before training loss or comparison. The 128x128 targets are unchanged. The previous central-input recipe remains reproducible with `--input-context 0` (the legacy default).
+
+```powershell
+$env:PYTHONPATH = 'src'
+python scripts/prepare_training_data.py --output data/processed/context --existing-splits configs/pilot-splits.json --input-context 4
+python -m smartphone_isp.training.train --config configs/context-hybrid.yaml
+python -m smartphone_isp.training.train --config configs/context-subpixel.yaml
+python -m smartphone_isp.training.train --config configs/context-resize.yaml
+python -m smartphone_isp.evaluation.pilot --manifest data/processed/context/manifest.json --checkpoint checkpoints/context-hybrid.pt --learned-checkpoint checkpoints/context-subpixel.pt --split validation --output outputs/context-subpixel-validation
+python -m smartphone_isp.evaluation.pilot --manifest data/processed/context/manifest.json --checkpoint checkpoints/context-hybrid.pt --learned-checkpoint checkpoints/context-resize.pt --split validation --output outputs/context-resize-validation
+```
+
+The raw files must first be present (`download_sidd_subset.py --scenes 5`). Both decoder recipes use the same backbone, training scenes, seed, objective, batch size, learning rate, and 20-epoch budget; output heads and parameter counts differ. Checkpoints retain separate format identifiers, and old pixel-shuffle checkpoints continue to load.
+
+In this validation check, learned-only PSNR improved from 15.70 dB (pixel-shuffle v1) to 19.38 dB (resize/convolution v2). The diagnostic 2x2 residual phase bias decreased substantially, but v2 still oversmooths details. Classical achieved 31.80 dB and hybrid 27.16 dB on the same validation patches. These scores are from a different split than the earlier test scores and must not be directly compared to them. No new test score was computed for this architecture change. See `reports/context_decoder_summary.md`.
+
+For v2 standalone inference, pass `--checkpoint checkpoints/context-resize.pt` to the existing `learned` command. Its CLI still returns full sensor-sized RGB; the four-pixel crop applies only to prepared patch targets during training/evaluation.

@@ -15,6 +15,8 @@ class PairedDataset(Dataset):
         self.model_kind = model_kind
         self.root = Path(manifest).parent
         document = json.loads(Path(manifest).read_text(encoding="utf-8"))
+        if document.get("input_context", 0) not in (0, 4):
+            raise ValueError("Unsupported input context in manifest")
         validate_disjoint(document["samples"])
         self.rows = [row for row in document["samples"] if row["split"] == split]
         if not self.rows:

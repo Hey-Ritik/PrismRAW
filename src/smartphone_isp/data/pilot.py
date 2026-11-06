@@ -30,7 +30,9 @@ def camera_metadata(meta):
             "camera_to_linear_srgb": (xyz_to_srgb @ np.linalg.inv(matrix)).tolist()}
 
 
-def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=42, existing_splits=None):
+def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=42, existing_splits=None, input_context=0):
+    if input_context not in (0, 4):
+        raise ValueError("input_context must be 0 (legacy) or 4 (equal RAW context)")
     if patch_size < 8 or patch_size % 2 or patches_per_scene < 1:
         raise ValueError("Use an even patch size >=8 and a positive patch count")
     index_path, destination = Path(index_path), Path(destination)
@@ -63,13 +65,14 @@ def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=4
             _, target_stages, _ = process(clean[cut], metadata, adaptive=False)
             # Exclude interpolation/filter border context from the stored patch.
             inner = (slice(4, -4), slice(4, -4))
-            source = source_stages["linear_srgb"][inner].astype(np.float32)
+            source_region = (...,) if input_context else inner
+            source = source_stages["linear_srgb"][source_region].astype(np.float32)
             target = target_stages["linear_srgb"][inner].astype(np.float32)
             display_target = render_linear(target_stages["linear_srgb"], stats["exposure_gain"])[0][inner]
             sample_id = f"{record['instance'][:4]}-{i:03d}"
             path = destination / f"{sample_id}.npz"
             np.savez_compressed(path, source=source, target=target,
-                                packed_raw=pack_bayer(source_stages["normalized_mosaic"][inner], metadata["bayer_pattern"]),
+                                packed_raw=pack_bayer(source_stages["normalized_mosaic"][source_region], metadata["bayer_pattern"]),
                                 calibration=np.array(metadata["white_balance"] +
                                     np.asarray(metadata["camera_to_linear_srgb"]).ravel().tolist() +
                                     [float(metadata["bayer_pattern"] == p) for p in ("RGGB", "BGGR", "GRBG", "GBRG")], dtype=np.float32),
@@ -81,7 +84,9 @@ def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=4
                          "path": path.name, "crop_yxhw": [y+4, x+4, patch_size, patch_size]})
         print(f"Prepared {record['instance']}: {assignments[record['scene_id']]} ({patches_per_scene} patches)", flush=True)
     validate_disjoint(rows)
-    manifest = {"schema": 2, "dataset": index["dataset"], "revision": index["revision"],
+    manifest = {"schema": 3 if input_context else 2, "input_context": input_context,
+                "context_protocol": "All methods receive the same 4-pixel RAW border; network outputs are cropped to the central target" if input_context else "Legacy: central neural input without RAW border",
+                "dataset": index["dataset"], "revision": index["revision"],
                 "index_sha256": hashlib.sha256(index_path.read_bytes()).hexdigest(),
                 "seed": seed, "patch_size": patch_size, "scene_assignments": assignments,
                 "target": "Clean RAW rendered through fixed approximate camera transform; not captured RGB ground truth",

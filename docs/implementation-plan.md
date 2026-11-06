@@ -19,6 +19,8 @@
 - [x] Run three-epoch CPU pilot training with explicit linear-RGB input/target pairs; larger training pending.
 - [x] Add noise/illumination conditioning and checkpoint/config tracking.
 - [x] Expand to five physical scenes and run both models for 20 CPU epochs, preserving pilot holdouts.
+- [x] Add shared four-pixel RAW context and explicit prediction/target shape checks.
+- [x] Compare subpixel and resize decoders on validation with matched training settings; preserve versioned checkpoints.
 
 ## 4. Evidence
 - [x] Run exploratory classical/learned-only/hybrid PSNR comparison on identical pilot patches; full metrics/fresh final holdout pending.

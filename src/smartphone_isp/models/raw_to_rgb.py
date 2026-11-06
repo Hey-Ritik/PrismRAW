@@ -37,3 +37,20 @@ class RawToRGBNet(nn.Module):
         y2 = self.dec2(torch.cat([F.interpolate(middle, size=x2.shape[-2:], mode="bilinear", align_corners=False), x2], dim=1))
         y1 = self.dec1(torch.cat([F.interpolate(y2, size=x1.shape[-2:], mode="bilinear", align_corners=False), x1], dim=1))
         return self.head(y1)
+
+
+class ResizeRawToRGBNet(RawToRGBNet):
+    """Version 2: shared resize/convolution output instead of four subpixel heads.
+
+    The U-Net backbone and input contract match v1. This changes only learned
+    feature upsampling; it does not insert a classical demosaicing operation.
+    """
+
+    def __init__(self, base_channels=16):
+        super().__init__(base_channels)
+        c = base_channels
+        self.head = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+            nn.Conv2d(c, c, 3, padding=1), nn.ReLU(),
+            nn.Conv2d(c, 3, 3, padding=1),
+        )

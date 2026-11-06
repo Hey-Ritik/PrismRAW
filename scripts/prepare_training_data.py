@@ -12,8 +12,9 @@ def main():
     parser.add_argument("--patches-per-scene", type=int, default=8)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--existing-splits", help="Preserve old scene assignments; new scenes enter training")
+    parser.add_argument("--input-context", type=int, choices=(0, 4), default=0, help="4 gives all methods equal RAW boundary context; 0 reproduces legacy pilot")
     args = parser.parse_args()
-    manifest = prepare(args.index, args.output, args.patch_size, args.patches_per_scene, args.seed, args.existing_splits)
+    manifest = prepare(args.index, args.output, args.patch_size, args.patches_per_scene, args.seed, args.existing_splits, args.input_context)
     print(f"Prepared {len(manifest['samples'])} patches; splits: {manifest['scene_assignments']}")
 
 
