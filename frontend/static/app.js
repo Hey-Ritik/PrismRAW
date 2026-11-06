@@ -4,6 +4,7 @@ const labels = {classical: 'Classical', learned: 'Learned', hybrid: 'Hybrid', op
 const descriptions = {classical: 'Traditional processing', learned: 'Neural reconstruction', hybrid: 'Classical + learned', optimized: 'Reduced precision', reference: 'Clean target render'};
 const sceneInfo = {'001': ['Samsung S6', 'Low light'], '003': ['Nexus 6', 'Normal light'], '004': ['Google Pixel', 'Indoor scene'], '005': ['iPhone 7', 'Low light']};
 let currentData = null, activeImage = 'hybrid', viewMode = 'compare', isBusy = false, timer = null;
+let measuredMethod = 'hybrid';
 
 function error(message) {
   $('error-message').textContent = message;
@@ -75,11 +76,17 @@ function selectImage(key) {
   $('left-label').textContent = baseline === 'sensor_preview' ? 'Sensor preview' : 'Classical';
   $('right-label').textContent = labels[key];
   document.querySelectorAll('[data-image]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.image === key)));
-  document.querySelectorAll('#metrics tr').forEach(row => row.classList.toggle('selected-row', row.dataset.method === key));
-  const metric = currentData.metrics[key];
-  $('quick-psnr').textContent = metric ? (metric.psnr === null ? '∞ dB' : `${metric.psnr.toFixed(2)} dB`) : '—';
-  $('quick-color').textContent = metric ? metric.delta_e_00.toFixed(2) : '—';
-  const milliseconds = currentData.processing_ms[key];
+  if (key !== 'reference') measuredMethod = key;
+  const metricKey = measuredMethod;
+  $('metric-context').textContent = key === 'reference'
+    ? `Viewing the clean reference. Measurements below: ${labels[metricKey]} compared with the reference.`
+    : `Measurements: ${labels[metricKey]}${currentData.metrics[metricKey] ? ' compared with the reference' : ' · no reference supplied'}.`;
+  document.querySelectorAll('#metrics tr').forEach(row => row.classList.toggle('selected-row', row.dataset.method === metricKey));
+  const metric = currentData.metrics[metricKey];
+  ['quick-psnr', 'quick-color'].forEach(id => $(id).classList.toggle('metric-unavailable', !metric));
+  $('quick-psnr').textContent = metric ? (metric.psnr === null ? '∞ dB' : `${metric.psnr.toFixed(2)} dB`) : 'Needs reference';
+  $('quick-color').textContent = metric ? metric.delta_e_00.toFixed(2) : 'Needs reference';
+  const milliseconds = currentData.processing_ms[metricKey];
   $('quick-time').textContent = milliseconds === undefined ? '—' : `${milliseconds.toFixed(0)} ms`;
 }
 
@@ -226,7 +233,7 @@ fetch(apiUrl('/api/health')).then(response => { if (!response.ok) throw Error();
   const engineName = data.hosted ? 'Hosted engine' : 'Local engine';
   $('connection').textContent = `${engineName} · ${data.device}`;
   $('privacy-message').textContent = data.hosted ? 'Uploads processed on hosting server' : 'Processing stays on this machine';
-  $('compute-note').textContent = `Selected pipeline · ${data.hosted ? 'server' : 'local'} CPU`;
+  $('compute-note').textContent = `Measured pipeline · ${data.hosted ? 'server' : 'local'} CPU`;
   $('crop-note').textContent = `We process a central crop up to ${data.max_crop} × ${data.max_crop}, preserving sensor orientation and Bayer phase.`;
   $('scene').replaceChildren(); $('sample-cards').replaceChildren();
   data.samples.forEach(sample => {
