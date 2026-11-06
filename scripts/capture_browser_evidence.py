@@ -18,6 +18,7 @@ with sync_playwright() as playwright:
     browser = playwright.chromium.launch(channel="msedge", headless=True)
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
     page.goto("http://127.0.0.1:7860", wait_until="networkidle")
+    page.locator('.input-settings details summary').click()
     page.locator("#fp16").check()
     page.evaluate("data => render(data)", data)
     page.evaluate("Promise.all(Array.from(document.images).filter(image => image.src).map(image => image.decode()))")

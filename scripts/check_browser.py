@@ -21,6 +21,7 @@ with sync_playwright() as playwright:
     if page.locator("#metrics tr").count() != 3:
         raise ValueError("Default CPU flow should use three FP32 pipelines")
     page.screenshot(path=str(output / "desktop-default.png"), full_page=True)
+    page.locator('.input-settings details summary').click()
     page.locator("#fp16").check()
     page.locator("#run-sample").scroll_into_view_if_needed()
     with page.expect_response(lambda response: "/api/sample/" in response.url and response.request.method == "POST", timeout=120000):

@@ -1,24 +1,69 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PrismRAW · Camera lab</title><link rel="stylesheet" href="/static/style.css"></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#15251f"><title>PrismRAW · Camera studio</title>
+  <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
 <body>
-<header><a class="brand" href="/" aria-label="PrismRAW home"><span class="prism">◬</span> Prism<span>RAW</span></a><div class="header-right"><span class="dot"></span><span id="connection">Connecting to local engine</span><span class="tag">P2 · Camera lab</span></div></header>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="PrismRAW home"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 34 31H2Z"/><path d="m18 3 6 28M2 31l19-14"/></svg><span>Prism<b>RAW</b></span></a>
+  <nav aria-label="Studio navigation"><a class="nav-active" href="#studio">Studio</a><a href="#benchmark">Evaluation</a></nav>
+  <div class="connection"><span class="status-dot"></span><span id="connection">Connecting to local engine</span><span class="team-tag">T47</span></div>
+</header>
 <main>
-<section class="intro"><div><p class="eyebrow">COMPUTATIONAL PHOTOGRAPHY / RAW → RGB</p><h1>A new perspective.<br><span>From the sensor up.</span></h1><p class="lede">Explore how classical processing and learned reconstruction turn sensor measurements into a photograph.</p></div><div class="intro-note"><span class="pill">LOCAL INFERENCE</span><p>Your camera data stays on this machine.<br>Results expire after one hour.</p></div></section>
-<div class="layout"><aside class="panel inputs"><div class="section-title"><span class="step">01</span><h2>Choose your input</h2></div>
-<div class="tabs" role="tablist"><button id="sample-tab" role="tab" aria-selected="true">Sample scene</button><button id="upload-tab" role="tab" aria-selected="false">Upload RAW</button></div>
-<section id="sample-pane"><label for="scene">SENSOR CAPTURE</label><select id="scene"><option>Loading sample library…</option></select><p class="hint">Real smartphone Bayer data with a matching clean RAW reference.</p><button class="primary" id="run-sample">Develop this scene <span>↗</span></button></section>
-<form id="upload-pane" hidden><label for="raw-file">RAW SENSOR FILE</label><div class="filebox"><strong>Bring your own capture</strong><small>DNG · NPY · NPZ · MAT / up to 64 MB</small><input id="raw-file" name="raw" type="file" accept=".dng,.npy,.npz,.mat" required></div><label for="metadata-file">CAMERA METADATA <span>Required for arrays</span></label><input id="metadata-file" name="metadata" type="file" accept=".json"><details><summary>Reference & array options</summary><label for="reference-file">MATCHING REFERENCE <span>Optional</span></label><input id="reference-file" name="reference" type="file" accept=".npy,.npz,.mat,.png,.jpg,.jpeg"><label for="array-key">MAT / NPZ VARIABLE</label><input id="array-key" name="key" value="data" maxlength="100"><p class="hint">Reference images must be spatially aligned. RAW arrays need Bayer pattern, normalization state, white balance, and a camera colour matrix.</p></details><button class="primary" type="submit">Develop my RAW <span>↗</span></button></form>
-<div class="divider"></div><label class="toggle"><input id="adaptive" type="checkbox" checked><span><strong>Adaptive processing</strong><small>Respond to noise and illumination</small></span></label><label class="toggle"><input id="fp16" type="checkbox"><span><strong>Include FP16 comparison</strong><small>Smaller weights; slower on this CPU</small></span></label><p class="hint crop-note">A central crop up to 512 × 512 preserves sensor detail and keeps local inference responsive. Sensor orientation is preserved.</p>
-<div class="model-note"><span class="mini-label">CURRENT QUALITY BASELINE</span><strong>Classical ISP</strong><p>Learned modes are experimental. Compare the evidence rather than assuming a neural model is better.</p></div>
-<details><summary>Processing stages</summary><ol><li>Sensor normalization & Bayer decoding</li><li>White balance & colour correction</li><li>Classical or learned restoration</li><li>Adaptive tone mapping & output encoding</li></ol><p class="hint">Learned-only reconstructs directly from packed Bayer data and camera metadata.</p></details>
-</aside>
-<section class="workspace"><div class="workspace-head"><div class="section-title"><span class="step">02</span><h2>Compare the reconstruction</h2></div><a id="download" class="secondary" hidden>Download results ↓</a></div>
-<div id="error" role="alert" hidden></div><div id="busy" role="status" hidden><span class="spinner"></span><div><strong>Developing your sensor capture</strong><small>Running available pipelines and reference metrics…</small></div></div>
-<div id="empty" class="empty"><div class="aperture">◉</div><h3>Every image starts with a measurement.</h3><p>Choose a sample or upload Bayer RAW to inspect<br>four approaches, one capture at a time.</p><div class="empty-tags"><span>CLASSICAL</span><span>LEARNED</span><span>HYBRID</span><span>FP16</span></div></div>
-<div id="results" hidden><div class="result-meta"><span id="dimensions"></span><span id="duration"></span></div><div id="output-grid" class="output-grid"></div>
-<div class="evidence-head"><h3>Measured quality</h3><span class="pill subtle">REFERENCE REQUIRED</span></div><p id="reference-kind" class="hint"></p><div class="table-scroll"><table><thead><tr><th>Pipeline</th><th>PSNR ↑</th><th>SSIM ↑</th><th>ΔE00 ↓</th><th>LPIPS ↓</th><th>Time</th></tr></thead><tbody id="metrics"></tbody></table></div><p class="hint">Timings are local CPU single runs, excluding model loading and file I/O. Reference metrics measure the supplied rendering, not universal camera accuracy.</p>
-<details class="stages" open><summary>Inside the pipeline</summary><div id="stage-grid" class="stage-grid"></div></details><div id="settings" class="settings"></div>
-</div></section></div>
-<section class="panel benchmark"><div><p class="eyebrow">EVIDENCE, NOT ASSUMPTIONS</p><h2>Quality has a computational cost.</h2><p class="hint">The evaluation report records quality, model size, CPU latency, and memory. Pilot-trained models remain limited by data coverage and approximate camera calibration.</p></div><button class="secondary" id="show-evaluation">View evaluation report ↗</button><div id="evaluation" hidden></div></section>
-<footer><span>PrismRAW / Computer Vision Hackathon · Problem 2</span><span>Local research prototype · Approximate colour calibration</span></footer>
-</main><dialog id="lightbox"><button id="close-lightbox" aria-label="Close image preview">×</button><img id="large-image" alt="Enlarged reconstruction"><p id="large-caption"></p></dialog><script src="/static/app.js"></script></body></html>
+  <section class="intro">
+    <div><p class="eyebrow"><span></span> COMPUTATIONAL PHOTOGRAPHY, MADE VISIBLE</p><h1>Start with RAW.<br><span>See the difference.</span></h1><p class="lede">One capture. Three ways to develop it. Explore the details with classical processing and learned reconstruction.</p></div>
+    <div class="intro-aside"><div class="intro-icons"><span>R</span><span>G</span><span>G</span><span>B</span><i>↗</i></div><p>From sensor measurements<br>to a picture you can inspect.</p><span class="privacy"><span class="status-dot"></span> Processing stays on this machine</span></div>
+  </section>
+
+  <div id="studio" class="studio-layout">
+    <aside class="input-panel panel">
+      <div class="section-heading"><span class="step">01</span><div><h2>Your capture</h2><p>Start with a sample or bring your own.</p></div></div>
+      <div class="tabs" role="tablist" aria-label="Input source"><button id="sample-tab" role="tab" aria-selected="true" aria-controls="sample-pane">Sample scenes</button><button id="upload-tab" role="tab" aria-selected="false" aria-controls="upload-pane" tabindex="-1">Upload RAW</button></div>
+      <section id="sample-pane" role="tabpanel" aria-labelledby="sample-tab">
+        <div id="sample-cards" class="sample-cards" role="group" aria-label="Choose a sample scene"></div>
+        <label class="sr-only" for="scene">Sensor capture</label><select id="scene" class="sr-only"><option>Loading sample library…</option></select>
+        <div class="sample-context"><span>↳</span><p>Real smartphone RAW, paired with a clean reference for quality measurements.</p></div>
+        <button class="primary" id="run-sample" disabled><span>Develop this scene</span><span aria-hidden="true">↗</span></button>
+      </section>
+      <form id="upload-pane" role="tabpanel" aria-labelledby="upload-tab" hidden>
+        <label class="field-label" for="raw-file">RAW SENSOR FILE</label>
+        <div class="filebox" id="drop-zone"><span class="upload-icon" aria-hidden="true">↥</span><strong>Drop your RAW file here</strong><span>or choose a file from your computer</span><input id="raw-file" name="raw" type="file" accept=".dng,.npy,.npz,.mat" required><small>DNG · NPY · NPZ · MAT / up to 64 MB</small></div>
+        <p id="file-status" class="file-status" role="status" hidden></p>
+        <div id="metadata-field"><label class="field-label" for="metadata-file">CAMERA METADATA <span>Required for NPY, NPZ and MAT</span></label><input id="metadata-file" name="metadata" type="file" accept=".json"></div>
+        <p id="dng-note" class="hint" hidden>Camera metadata will be read from your DNG. No separate JSON is needed.</p>
+        <details class="advanced"><summary>Reference & array options <span>+</span></summary><label class="field-label" for="reference-file">MATCHING REFERENCE <span>Optional · enables quality scores</span></label><input id="reference-file" name="reference" type="file" accept=".npy,.npz,.mat,.png,.jpg,.jpeg"><label class="field-label" for="array-key">MAT / NPZ VARIABLE</label><input id="array-key" name="key" value="data" maxlength="100"><p class="hint">References must already be aligned. Array metadata describes the Bayer pattern, normalization, white balance and colour matrix.</p></details>
+        <button class="primary" type="submit"><span>Develop my RAW</span><span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="input-settings"><label class="toggle"><input id="adaptive" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>Adapt to the scene</strong><small>Adjust for noise and lighting</small></span></label><details class="advanced"><summary>Advanced processing <span>+</span></summary><label class="toggle"><input id="fp16" type="checkbox"><span class="switch" aria-hidden="true"></span><span><strong>Include FP16 comparison</strong><small>Smaller model, slower on this CPU</small></span></label><p class="hint">We process a central crop up to 512 × 512, preserving sensor orientation and Bayer phase.</p></details></div>
+      <div class="getting-started"><span class="mini-label">FIRST TIME HERE?</span><p>Choose a scene, press <b>Develop</b>, then drag the comparison slider to inspect the result.</p></div>
+      <div class="input-footnote"><span class="lock-icon" aria-hidden="true">◇</span><p>No cloud inference.<br>Generated results expire after one hour.</p></div>
+    </aside>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="workspace-head"><div class="section-heading"><span class="step">02</span><div><h2 id="workspace-title">The development room</h2><p id="workspace-caption">A closer look at what your sensor sees.</p></div></div><a id="download" class="secondary" hidden>Download results <span aria-hidden="true">↓</span></a></div>
+      <div id="error" role="alert" hidden><span id="error-message"></span><button id="dismiss-error" aria-label="Dismiss error">×</button></div>
+      <div id="busy" role="status" hidden><span class="spinner"></span><div><strong>Developing your capture</strong><small>Running the selected pipelines and available reference metrics.</small></div><span id="elapsed">0 s</span></div>
+      <div id="empty" class="empty-studio"><div class="canvas-grid"></div><div class="empty-topline"><span>PRISMRAW / LIVE WORKSPACE</span><span class="canvas-corners">⌖</span></div><div class="empty-center"><div class="sensor-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="mini-label">YOUR CANVAS IS READY</p><h3>Every detail starts<br>with a measurement.</h3><p>Develop a sample to see how each pipeline<br>handles colour, noise and fine detail.</p><button class="text-button" id="quick-start" disabled>Try the selected sample <span>↗</span></button></div><div class="empty-bottom"><span>01 / CHOOSE</span><i></i><span>02 / DEVELOP</span><i></i><span>03 / COMPARE</span></div></div>
+
+      <div id="results" hidden>
+        <div class="viewer-shell"><div class="viewer-top"><div id="viewer-tabs" class="viewer-tabs" role="group" aria-label="Active image"></div><button id="zoom-current" class="icon-button" aria-label="Enlarge selected image" title="Enlarge selected image">⤢</button></div>
+          <div id="compare-stage" class="compare-stage"><img id="viewer-after" alt="Selected pipeline result" draggable="false"><div id="before-overlay"><img id="viewer-before" alt="Comparison baseline" draggable="false"></div><div id="split-line" aria-hidden="true"><span>↔</span></div><div class="canvas-label label-left" id="left-label"></div><div class="canvas-label label-right" id="right-label"></div><div class="viewer-grain" aria-hidden="true"></div></div>
+          <div class="viewer-bottom"><div class="view-modes" role="group" aria-label="Viewer mode"><button id="mode-compare" aria-pressed="true">Compare</button><button id="mode-single" aria-pressed="false">Single view</button></div><label class="sr-only" for="compare-range">Comparison split</label><input id="compare-range" type="range" min="0" max="100" value="50" aria-label="Comparison split"><span id="viewer-help">Drag to compare</span></div>
+        </div>
+        <div class="result-meta"><span id="dimensions"></span><span id="duration"></span></div>
+        <div id="output-grid" class="output-grid" role="group" aria-label="Select a reconstruction"></div>
+        <div class="quick-metrics"><div><span>RECONSTRUCTION FIDELITY</span><strong id="quick-psnr">—</strong><small>PSNR · higher is closer to reference</small></div><div><span>COLOUR DIFFERENCE</span><strong id="quick-color">—</strong><small>Delta E 00 · lower is closer</small></div><div><span>PROCESSING TIME</span><strong id="quick-time">—</strong><small>Selected pipeline · local CPU</small></div></div>
+        <details class="measurement-panel panel"><summary><span>All pipeline measurements</span><span class="detail-right">Compare the numbers <b>+</b></span></summary><p id="reference-kind" class="hint"></p><div class="table-scroll"><table><thead><tr><th>Pipeline</th><th title="Reconstruction fidelity; higher is better">PSNR ↑</th><th title="Structural similarity; higher is better">SSIM ↑</th><th title="Colour error; lower is better">ΔE00 ↓</th><th title="Perceptual distance; lower is better">LPIPS ↓</th><th>Time</th></tr></thead><tbody id="metrics"></tbody></table></div><p class="hint">CPU timings are single runs, excluding model loading and file I/O. Reference scores apply to the supplied rendering, not universal camera accuracy.</p></details>
+        <details class="stages panel"><summary><span>Inside the pipeline</span><span class="detail-right">See the intermediate stages <b>+</b></span></summary><div id="stage-grid" class="stage-grid"></div><div id="settings" class="settings"></div></details>
+      </div>
+    </section>
+  </div>
+
+  <section id="benchmark" class="benchmark panel"><div class="benchmark-intro"><p class="eyebrow">THE BIGGER PICTURE</p><h2>A good image is only half the story.</h2><p>Explore measured quality, model size and compute costs across the held-out scenes.</p></div><button class="secondary" id="show-evaluation" aria-expanded="false">View evaluation report <span>↗</span></button><div id="evaluation" hidden></div></section>
+  <footer><span class="footer-brand">PrismRAW <i>/</i> Team T47</span><span>Computer Vision Hackathon · Problem 2</span><span>Research prototype · Approximate colour calibration</span></footer>
+</main>
+<dialog id="lightbox"><div class="lightbox-bar"><p id="large-caption"></p><button id="close-lightbox" aria-label="Close image preview">×</button></div><img id="large-image" alt="Enlarged reconstruction"></dialog>
+<script src="/static/app.js?v=2"></script>
+</body></html>

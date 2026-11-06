@@ -1,0 +1,15 @@
+{
+  "sample_selection": "passed",
+  "real_processing": "passed",
+  "comparison_slider_keyboard": "passed",
+  "pipeline_selection": "passed",
+  "single_view": "passed",
+  "zoom": "passed",
+  "metrics": "passed",
+  "downloads": "passed",
+  "evaluation": "passed",
+  "upload_guidance": "passed",
+  "error_state": "passed",
+  "mobile_overflow": false,
+  "javascript_errors": []
+}

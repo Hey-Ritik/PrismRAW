@@ -14,6 +14,8 @@ Open **http://127.0.0.1:7860** after startup finishes warming the models. Stop w
 
 The responsive local app includes real sample scenes, DNG/array uploads, four-way comparison, reference metrics, stage previews, zoom, adaptive controls, evaluation results and downloadable images/reports. Processing preserves Bayer phase using an even-offset central crop up to 512x512. Classical remains the reference baseline; neural quality varies by scene.
 
+The studio UI adds real-scene thumbnail selection, a large classical-versus-selected split viewer, keyboard-accessible comparison slider, single-image mode, compact pipeline switching, and selected-image quality/time summaries. Full measurements and stage details expand on demand. DNG selection hides the unnecessary metadata sidecar field; array selection requires it. RAW files can be selected or dropped into the upload area. Desktop/mobile interaction checks are available in `scripts/check_ui.py` and `reports/ui_v2_verification.json`.
+
 ## Measured final result
 
 The hybrid scores **39.2312 dB PSNR** against **38.4589 dB** for classical on 64 patches from fresh scenes 009/010. SSIM improves from 0.8867 to 0.9027, Delta E 00 decreases from 2.7438 to 2.5231, and LPIPS-Squeeze decreases from 0.1042 to 0.0936. These are limited local research results against approximate clean-RAW renders, not official benchmark rankings or absolute colour calibration.
