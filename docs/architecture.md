@@ -1,6 +1,6 @@
 # Architecture
 
-This diagram is the intended architecture; only foundational utilities and the untrained refinement model currently exist.
+The classical array-input path is implemented. Learned and hybrid integration, direct DNG decoding, and trained model weights remain pending. The refinement network is defined but untrained.
 
 ```mermaid
 flowchart TD

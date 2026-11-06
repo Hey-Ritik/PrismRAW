@@ -1,0 +1,7 @@
+{
+  "normalized": true,
+  "bayer_pattern": "RGGB",
+  "white_balance": [1.0, 1.0, 1.0],
+  "camera_to_linear_srgb": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+  "provenance": "Synthetic pipeline smoke input only; not camera calibration"
+}

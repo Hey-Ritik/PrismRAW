@@ -4,7 +4,7 @@ Hybrid smartphone RAW-to-RGB reconstruction combining classical image processing
 
 ## Current status
 
-Initial project scaffold. Implemented: Bayer packing, normalization, camera-stage functions, a compact RGB residual network, and an environment-check CLI. Dataset integration, demosaicing, model training, inference orchestration, evaluation, and hosted UI are still to be implemented. No trained weights or measured results are included.
+Classical array-based RAW-to-RGB inference is implemented: explicit normalization, Bayer white balance, bilinear demosaicing, colour correction, bilateral denoising, adaptive exposure/tone mapping, sRGB encoding, and sharpening. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. A compact RGB residual network is defined but untrained. Training, reference-quality evaluation, optimized export, and hosted UI are pending.
 
 ## Setup (PowerShell)
 
@@ -48,7 +48,38 @@ scripts/                   Dataset and experiment entry points
 
 ## First implementation milestone
 
-Validate one paired RAW/RGB sample and metadata, then implement an end-to-end classical ISP. Follow `docs/implementation-plan.md`. Reference-based metrics must only be computed against aligned ground truth. Preview renders of RAW data are not the original sensor measurements.
+The classical pipeline has been smoke-tested on synthetic input and a crop of the authors' real clean SIDD reference RAW. This does not establish reconstruction quality. Reference-based metrics must only be computed against aligned ground truth. Preview renders of RAW data are not the original sensor measurements.
+
+## Run the classical pipeline
+
+Without an editable install, set the source path in PowerShell:
+
+```powershell
+$env:PYTHONPATH = 'src'
+python scripts/create_smoke_input.py
+python -m smartphone_isp.cli classical --input data/processed/synthetic-smoke.npy --metadata configs/synthetic-metadata.json --output outputs/classical-smoke
+python -m unittest discover -s tests -v
+```
+
+Outputs: `output.png`, floating-point `intermediates.npz`, and `processing.json` with selected settings and array-processing latency. Synthetic input is a plumbing check, not a benchmark. Use `--fixed` for non-adaptive parameters. `--key x` selects an array from a MAT/NPZ container.
+
+Metadata JSON must explicitly provide `normalized`, `bayer_pattern`, `white_balance`, and `camera_to_linear_srgb`. Unnormalized arrays additionally require scalar `black_level` and `white_level`. Identity matrices in the synthetic example are not real camera calibration.
+
+## Dataset acquisition
+
+`python scripts/download_sidd_subset.py` downloads one noisy/clean RAW pair and metadata from the [SIDD-CC research derivative](https://huggingface.co/datasets/MhdMohammadi/SIDD-CC), with source URLs and SHA-256 hashes in the ignored dataset folder. This is not the original SIDD Small release and is insufficient for training or evaluation claims. The original download endpoint timed out during setup.
+
+The clean sample used for initial ISP validation comes from the [SIDD authors' reference repository](https://github.com/AbdoKamel/simple-camera-pipeline/tree/master/data). `scripts/prepare_sidd_reference.py` prepares that sample if the two reference MAT files are present. Its single-illuminant colour transform is approximate, preserves sensor orientation, and is not an exact reproduction of SIDD's sRGB rendering.
+
+After installing the `raw` optional dependencies, prepare and process the paired development subset:
+
+```powershell
+python scripts/download_sidd_subset.py
+python scripts/prepare_sidd_subset.py
+python -m smartphone_isp.cli classical --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --output outputs/sidd-cc-classical
+```
+
+The prepared subset contains noisy/clean **RAW** crops, not an independently calibrated RGB reference. Its manifest is explicitly marked `development`. Scene expansion, registration checks, and target-rendering validation are required before evaluation or training.
 
 ## Reproducibility
 

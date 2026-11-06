@@ -1,4 +1,4 @@
 """Integration point for classical, learned-only, and hybrid pipelines.
 
-End-to-end inference is pending verified dataset and metadata integration.
+Classical array inference is available. Learned and hybrid inference are pending.
 """

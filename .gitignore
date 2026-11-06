@@ -11,5 +11,6 @@ data/splits/*.csv
 checkpoints/*
 !checkpoints/.gitkeep
 runs/
+work/
 outputs/*
 !outputs/.gitkeep

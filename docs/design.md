@@ -10,7 +10,7 @@ Validated sensor data plus explicit normalization state and camera metadata. See
 Classical camera stages with a compact conditioned RGB residual network. Maintain a separate packed-Bayer learned baseline.
 
 ## Dataset and splits
-Proposed: SIDD Small initially. Verify paired target rendering and scene grouping before training. Dataset has not been downloaded.
+Initial real-data validation uses a clean RAW and metadata from the SIDD authors' reference repository. The original download server timed out; the subset downloader retrieves one pair from the SIDD-CC research derivative for loader development. Verify rendering and metadata compatibility before training. A one-pair subset is not a training/evaluation split.
 
 ## Training
 Patch-based learning with reconstruction, structure, and colour objectives. Hyperparameters in `configs/default.yaml` are starting values, not tuned results. Training loop and learned-only network are pending.

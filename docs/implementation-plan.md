@@ -1,17 +1,17 @@
 # Implementation plan
 
 ## 1. Data validation
-- [ ] Download a manageable paired dataset subset.
-- [ ] Inspect one RAW, clean target, and metadata tuple.
+- [x] Download one SIDD-CC noisy/clean RAW development pair with metadata and provenance.
+- [x] Inspect RAW pair dimensions, values, and metadata; RGB target validation remains pending.
 - [ ] Verify CFA, normalization state, colour matrices and registration.
 - [ ] Save scene-level train/validation/test manifests before extracting patches.
 
 ## 2. Classical ISP
 - [ ] Implement MAT/DNG adapters without hidden full-ISP preprocessing.
-- [ ] Integrate Bayer white balance and demosaicing.
+- [x] Integrate Bayer white balance and bilinear demosaicing for array inputs.
 - [ ] Validate camera-to-output colour transformation.
-- [ ] Add denoising, adaptive tone mapping, controlled sharpening.
-- [ ] Export intermediate stages and end-to-end RGB output.
+- [x] Add bilateral denoising, adaptive tone mapping, controlled sharpening.
+- [x] Export intermediate arrays and end-to-end RGB output.
 
 ## 3. Learning
 - [ ] Implement paired patch dataset and CFA-safe augmentation.
