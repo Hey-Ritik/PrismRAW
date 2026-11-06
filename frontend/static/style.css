@@ -14,3 +14,7 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}.spinner{animation-duration:2s}}
 
 .quick-metrics strong.metric-unavailable{font-size:clamp(14px,1.4vw,20px);line-height:1.3}
+
+.comparison-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}.comparison-summary>div{display:grid;gap:8px;padding:18px;border:1px solid var(--line,#dce3d8);border-radius:14px;background:#f1f5e9}.comparison-summary span,.comparison-summary small{font-size:11px;line-height:1.5}.comparison-summary strong{font-size:15px}#retry-connection{padding:7px 10px;font-size:11px}@media(max-width:600px){.comparison-summary{grid-template-columns:1fr}.comparison-summary>div{padding:14px}}
+
+#failures{grid-column:1/-1;min-width:0}#failures article{padding:16px 0;border-bottom:1px solid #dce3d8}.failure-image{display:block;width:100%;height:auto;border-radius:12px}#failures p{line-height:1.7}

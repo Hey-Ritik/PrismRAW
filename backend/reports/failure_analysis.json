@@ -1,0 +1,98 @@
+{
+  "scope": "Retrospectively selected difficult examples from the frozen 64-patch test report; not a new independent evaluation or model-selection set.",
+  "examples": [
+    {
+      "name": "learned_perceptual_error",
+      "sample_id": "0198-003",
+      "scene_id": "010",
+      "image": "/failure-examples/learned_perceptual_error.png",
+      "metrics": {
+        "classical": {
+          "psnr": 38.06364959122625,
+          "ssim": 0.9109082221984863,
+          "delta_e_00": 1.4756529331207275,
+          "lpips": 0.052148472517728806
+        },
+        "learned": {
+          "psnr": 17.919396153714267,
+          "ssim": 0.8493154048919678,
+          "delta_e_00": 18.244548797607422,
+          "lpips": 0.48942995071411133
+        },
+        "hybrid": {
+          "psnr": 38.435997882096956,
+          "ssim": 0.9242741465568542,
+          "delta_e_00": 1.480899453163147,
+          "lpips": 0.047011904418468475
+        },
+        "optimized": {
+          "psnr": 38.43688470445252,
+          "ssim": 0.9242711663246155,
+          "delta_e_00": 1.480586290359497,
+          "lpips": 0.04698312282562256
+        },
+        "hybrid_no_adaptation": {
+          "psnr": 15.345710089597961,
+          "ssim": 0.8473904728889465,
+          "delta_e_00": 14.642126083374023,
+          "lpips": 0.06488949060440063
+        }
+      },
+      "explanation": "Learned LPIPS 0.4894, versus classical 0.0521; learned colour error 18.24, versus classical 1.48."
+    },
+    {
+      "name": "hybrid_tradeoff",
+      "sample_id": "0198-023",
+      "scene_id": "010",
+      "image": "/failure-examples/hybrid_tradeoff.png",
+      "metrics": {
+        "classical": {
+          "psnr": 39.78876450755263,
+          "ssim": 0.9803479313850403,
+          "delta_e_00": 1.4000717401504517,
+          "lpips": 0.01247602328658104
+        },
+        "learned": {
+          "psnr": 27.340963386579013,
+          "ssim": 0.9022929668426514,
+          "delta_e_00": 7.240185737609863,
+          "lpips": 0.1906682252883911
+        },
+        "hybrid": {
+          "psnr": 40.97781297262121,
+          "ssim": 0.984449565410614,
+          "delta_e_00": 1.4982640743255615,
+          "lpips": 0.019252294674515724
+        },
+        "optimized": {
+          "psnr": 40.97779741001277,
+          "ssim": 0.9844462871551514,
+          "delta_e_00": 1.498260259628296,
+          "lpips": 0.01923760399222374
+        },
+        "hybrid_no_adaptation": {
+          "psnr": 19.799489528058018,
+          "ssim": 0.9567430019378662,
+          "delta_e_00": 10.234994888305664,
+          "lpips": 0.03132505714893341
+        }
+      },
+      "explanation": "Hybrid LPIPS 0.0193, versus classical 0.0125; hybrid PSNR 40.98 dB, versus classical 39.79 dB. Metrics capture different trade-offs."
+    }
+  ],
+  "checkpoint_sha256": {
+    "learned": "2c5548564fd584216f95983bb4998f1f8ee24bd572c4b5ff4b9d2dc70a754301",
+    "hybrid": "d5e2b6d84f0dfb9b120a88248bb756ed9055d16f8621835df43b9d1980485d3e"
+  },
+  "limitations": [
+    "Two physical test scenes cannot establish broad camera generalization.",
+    "Clean RAW targets use approximate colour calibration.",
+    "Synthetic dark/noisy and colour-cast stress results are distinct from real capture evaluation.",
+    "LPIPS and pixel fidelity can disagree; inspect images alongside multiple metrics."
+  ],
+  "training_followup": {
+    "selected": "final-learned",
+    "selection_rule": "Require lower LPIPS, no decrease in PSNR/SSIM and no increase in Delta E versus deployed baseline; choose lowest LPIPS among eligible candidates.",
+    "production_weights_replaced": false
+  }
+}

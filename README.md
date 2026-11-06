@@ -1,5 +1,7 @@
 # PrismRAW
 
+The studio includes backend wake-up/retry handling, per-capture quality/latency highlights, and measured failure examples. Three learned-model improvement trials were evaluated; none passed the quality promotion gate, so deployed weights remain unchanged. See [the measured experiment notes](docs/model-improvement.md).
+
 Current structure: `frontend/` contains the static website and Vercel configuration; `backend/` contains Python source, scripts, tests, models, configs, reports and datasets. Set **Vercel Root Directory to frontend**. Render uses the repository-root Blueprint with Docker context `./backend` and Dockerfile `./backend/Dockerfile`. Run Python/training/evaluation commands below from **backend/**. The root `run_local.ps1` still launches both locally. Generated release ZIPs remain under root `outputs/`.
 
 

@@ -5,13 +5,12 @@ const descriptions = {classical: 'Traditional processing', learned: 'Neural reco
 const sceneInfo = {'001': ['Samsung S6', 'Low light'], '003': ['Nexus 6', 'Normal light'], '004': ['Google Pixel', 'Indoor scene'], '005': ['iPhone 7', 'Low light']};
 let currentData = null, activeImage = 'hybrid', viewMode = 'compare', isBusy = false, timer = null;
 let measuredMethod = 'hybrid';
-
+let engineReady = false, connecting = null;
 function error(message) {
   $('error-message').textContent = message;
   $('error').hidden = !message;
 }
 $('dismiss-error').onclick = () => error('');
-
 function busy(value) {
   isBusy = value;
   $('busy').hidden = !value;
@@ -24,7 +23,6 @@ function busy(value) {
     timer = setInterval(() => $('elapsed').textContent = `${Math.floor((Date.now() - started) / 1000)} s`, 1000);
   }
 }
-
 function zoom(url, caption) {
   $('large-image').src = url;
   $('large-caption').textContent = caption;
@@ -33,7 +31,6 @@ function zoom(url, caption) {
 $('close-lightbox').onclick = () => $('lightbox').close();
 $('lightbox').onclick = event => { if (event.target === $('lightbox')) $('lightbox').close(); };
 $('zoom-current').onclick = () => { if (currentData) zoom(currentData.images[activeImage], labels[activeImage]); };
-
 function setSplit(value) {
   const split = Math.max(0, Math.min(100, Number(value)));
   $('compare-range').value = split;
@@ -64,7 +61,6 @@ function setViewMode(mode) {
 }
 $('mode-compare').onclick = () => setViewMode('compare');
 $('mode-single').onclick = () => setViewMode('single');
-
 function selectImage(key) {
   if (!currentData?.images[key]) return;
   activeImage = key;
@@ -89,7 +85,6 @@ function selectImage(key) {
   const milliseconds = currentData.processing_ms[metricKey];
   $('quick-time').textContent = milliseconds === undefined ? '—' : `${milliseconds.toFixed(0)} ms`;
 }
-
 function imageCard(key, url) {
   const card = document.createElement('button');
   card.type = 'button'; card.className = 'image-card'; card.dataset.image = key;
@@ -101,7 +96,6 @@ function imageCard(key, url) {
   card.append(img, title); card.onclick = () => selectImage(key);
   return card;
 }
-
 function render(data) {
   data.images = Object.fromEntries(Object.entries(data.images).map(([key, url]) => [key, apiUrl(url)]));
   data.intermediates = Object.fromEntries(Object.entries(data.intermediates).map(([key, url]) => [key, apiUrl(url)]));
@@ -110,6 +104,14 @@ function render(data) {
   currentData = data;
   $('empty').hidden = true; $('results').hidden = false;
   $('output-grid').replaceChildren(); $('viewer-tabs').replaceChildren();
+  const summary = $('comparison-summary'); summary.replaceChildren();
+  for (const item of window.PrismRAWComparison(data)) {
+    const card = document.createElement('div'), title = document.createElement('span'), winner = document.createElement('strong'), detail = document.createElement('small');
+    title.textContent = item.title;
+    winner.textContent = item.methods.length ? item.methods.map(key => labels[key]).join(' / ') : 'Needs reference';
+    detail.textContent = item.value === null ? 'Supply a matching clean reference to compare quality.' : item.detail;
+    card.append(title, winner, detail); summary.append(card);
+  }
   for (const [key, name] of Object.entries(labels)) {
     if (!data.images[key]) continue;
     $('output-grid').append(imageCard(key, data.images[key]));
@@ -147,10 +149,11 @@ function render(data) {
   selectImage(data.images.hybrid ? 'hybrid' : 'classical');
   setSplit(50); setViewMode(viewMode);
 }
-
 async function request(url, options) {
   busy(true); error('');
   try {
+    await connectEngine();
+    if (!engineReady) throw Error('The backend is still unavailable. Use Retry connection, then submit again.');
     const response = await fetch(apiUrl(url), options);
     const text = await response.text();
     let data;
@@ -161,7 +164,6 @@ async function request(url, options) {
   } catch (exception) { error(exception.message || 'Unable to reach the processing engine.'); }
   finally { busy(false); }
 }
-
 function tab(upload) {
   $('sample-pane').hidden = upload; $('upload-pane').hidden = !upload;
   $('sample-tab').setAttribute('aria-selected', String(!upload)); $('upload-tab').setAttribute('aria-selected', String(upload));
@@ -176,7 +178,6 @@ function runSample() {
   request(`/api/sample/${encodeURIComponent($('scene').value)}?adaptive=${$('adaptive').checked}&include_fp16=${$('fp16').checked}`, {method: 'POST'});
 }
 $('run-sample').onclick = runSample; $('quick-start').onclick = runSample;
-
 function selectedFile() {
   const file = $('raw-file').files[0];
   $('file-status').hidden = true;
@@ -202,11 +203,12 @@ $('upload-pane').onsubmit = event => {
   for (const key of ['metadata', 'reference']) if (!form.get(key)?.size) form.delete(key);
   request('/api/upload', {method: 'POST', body: form});
 };
-
 $('show-evaluation').onclick = async () => {
   const box = $('evaluation');
   if (!box.hidden) { box.hidden = true; $('show-evaluation').setAttribute('aria-expanded', 'false'); return; }
   try {
+    await connectEngine();
+    if (!engineReady) throw Error('Backend unavailable');
     const response = await fetch(apiUrl('/api/evaluation')); if (!response.ok) throw Error(); const data = await response.json(); box.replaceChildren();
     const note = document.createElement('p');
     if (!data.metrics) { note.textContent = data.status || 'Evaluation unavailable'; box.append(note); }
@@ -223,13 +225,13 @@ $('show-evaluation').onclick = async () => {
     box.hidden = false; $('show-evaluation').setAttribute('aria-expanded', 'true');
   } catch { error('The measured evaluation report could not be loaded. Please try again.'); }
 };
-
 function chooseScene(id) {
   $('scene').value = id;
   document.querySelectorAll('[data-scene]').forEach(card => card.setAttribute('aria-pressed', String(card.dataset.scene === id)));
 }
 $('scene').onchange = () => chooseScene($('scene').value);
-fetch(apiUrl('/api/health')).then(response => { if (!response.ok) throw Error(); return response.json(); }).then(data => {
+function applyHealth(data) {
+  const selectedScene = $('scene').value;
   const engineName = data.hosted ? 'Hosted engine' : 'Local engine';
   $('connection').textContent = `${engineName} · ${data.device}`;
   $('privacy-message').textContent = data.hosted ? 'Uploads processed on hosting server' : 'Processing stays on this machine';
@@ -243,7 +245,52 @@ fetch(apiUrl('/api/health')).then(response => { if (!response.ok) throw Error();
     const img = document.createElement('img'); img.src = `/static/samples/${sample.id}.jpg`; img.alt = ''; img.draggable = false;
     const text = document.createElement('span'); text.className = 'sample-text'; const title = document.createElement('strong'), subtitle = document.createElement('small'); title.textContent = info[0]; subtitle.textContent = info[1]; text.append(title, subtitle); card.append(img, text); card.onclick = () => chooseScene(sample.id); $('sample-cards').append(card);
   });
-  if (data.samples.length) { chooseScene(data.samples[0].id); $('run-sample').disabled = false; $('quick-start').disabled = false; }
+  if (data.samples.length) { chooseScene(data.samples.some(sample => sample.id === selectedScene) ? selectedScene : data.samples[0].id); $('run-sample').disabled = isBusy; $('quick-start').disabled = isBusy; }
   else { $('run-sample').disabled = true; $('quick-start').disabled = true; $('connection').textContent = `${engineName} · sample assets missing`; }
   if (!data.models.learned || !data.models.hybrid) $('connection').textContent = `${engineName} · classical ready`;
-}).catch(() => error('The processing engine is unavailable. Reload the page and try again.'));
+}
+async function connectEngine() {
+  if (connecting) return connecting;
+  connecting = (async () => {
+    engineReady = false;
+    $('retry-connection').hidden = true;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      $('connection').textContent = attempt ? 'Backend is waking up - please wait-' : 'Connecting to processing engine-';
+      try {
+        const response = await fetch(apiUrl('/api/health'), {signal: AbortSignal.timeout(12000)});
+        if (!response.ok) throw Error('Health check failed');
+        const data = await response.json();
+        if (data.status !== 'ok') throw Error('Backend not ready');
+        applyHealth(data); engineReady = true; error(''); return;
+      } catch {
+        if (attempt < 5) await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+    $('connection').textContent = 'Backend unavailable';
+    $('retry-connection').hidden = false;
+    error('The backend may still be waking up. Retry the connection in a moment. Your processing request has not been resent.');
+  })();
+  try { await connecting; } finally { connecting = null; }
+}
+$('retry-connection').onclick = () => connectEngine();
+connectEngine();
+$('show-failures').onclick = async () => {
+  const box = $('failures');
+  if (!box.hidden) { box.hidden = true; $('show-failures').setAttribute('aria-expanded', 'false'); return; }
+  try {
+    await connectEngine();
+    if (!engineReady) throw Error('Backend unavailable');
+    const response = await fetch(apiUrl('/api/failures'));
+    if (!response.ok) throw Error('Failure report unavailable');
+    const data = await response.json(); box.replaceChildren();
+    const note = document.createElement('p'); note.textContent = data.scope; box.append(note);
+    for (const example of data.examples) {
+      const card = document.createElement('article'), title = document.createElement('h3'), image = document.createElement('img'), text = document.createElement('p');
+      title.textContent = `Scene ${example.scene_id} · ${example.sample_id}`;
+      image.src = apiUrl(example.image); image.alt = 'Reference, classical, learned and hybrid reconstruction comparison'; image.className = 'failure-image'; image.loading = 'lazy';
+      text.textContent = example.explanation; card.append(title, image, text); box.append(card);
+    }
+    const limits = document.createElement('p'); limits.textContent = data.limitations.join(' '); box.append(limits);
+    box.hidden = false; $('show-failures').setAttribute('aria-expanded','true');
+  } catch { error('The failure examples could not be loaded. Check the engine connection and try again.'); }
+};

@@ -1,0 +1,71 @@
+{
+  "dataset": "MhdMohammadi/SIDD-CC",
+  "revision": "5eb2ab6375d7f99f36b59bb5aacb46af18409412",
+  "added_captures": [
+    {
+      "scene_id": "003",
+      "instance": "0064_003_GP_01600_01600_4400_N",
+      "files": {
+        "noisy": {
+          "path": "data/raw/sidd-cc-subset/0064_003_GP_01600_01600_4400_N/0064_NOISY_RAW_031.MAT",
+          "url": "https://huggingface.co/datasets/MhdMohammadi/SIDD-CC/resolve/5eb2ab6375d7f99f36b59bb5aacb46af18409412/Raw/train/Data/0064_003_GP_01600_01600_4400_N/0064_NOISY_RAW_031.MAT",
+          "sha256": "1edf932d7990a98db1bd180910dc93a85fad761392963cafaf1e0b0a17ed8675",
+          "bytes": 49159096
+        },
+        "clean": {
+          "path": "data/raw/sidd-cc-subset/0064_003_GP_01600_01600_4400_N/0064_GT_RAW_031.MAT",
+          "url": "https://huggingface.co/datasets/MhdMohammadi/SIDD-CC/resolve/5eb2ab6375d7f99f36b59bb5aacb46af18409412/Raw/train/Data/0064_003_GP_01600_01600_4400_N/0064_GT_RAW_031.MAT",
+          "sha256": "1f25220f8a41b2b6cb90d3521a9fd9cd2e108dfc294394525214908759edd513",
+          "bytes": 49159096
+        },
+        "metadata": {
+          "path": "data/raw/sidd-cc-subset/0064_003_GP_01600_01600_4400_N/0064_METADATA_RAW_031.MAT",
+          "url": "https://huggingface.co/datasets/MhdMohammadi/SIDD-CC/resolve/5eb2ab6375d7f99f36b59bb5aacb46af18409412/Raw/train/Data/0064_003_GP_01600_01600_4400_N/0064_METADATA_RAW_031.MAT",
+          "sha256": "8eedee8150499793ed2af7e14b8356868efbd014c7ef56ea9189dc4241f0caa5",
+          "bytes": 592
+        }
+      }
+    },
+    {
+      "scene_id": "004",
+      "instance": "0076_004_N6_03200_00320_3200_L",
+      "files": {
+        "noisy": {
+          "path": "data/raw/sidd-cc-subset/0076_004_N6_03200_00320_3200_L/0076_NOISY_RAW_094.MAT",
+          "url": "https://huggingface.co/datasets/MhdMohammadi/SIDD-CC/resolve/5eb2ab6375d7f99f36b59bb5aacb46af18409412/Raw/train/Data/0076_004_N6_03200_00320_3200_L/0076_NOISY_RAW_094.MAT",
+          "sha256": "a878185d98a2b514505eef657ed638e0be908d2c6d3e7b02f57f4fba72396b8c",
+          "bytes": 52516024
+        },
+        "clean": {
+          "path": "data/raw/sidd-cc-subset/0076_004_N6_03200_00320_3200_L/0076_GT_RAW_094.MAT",
+          "url": "https://huggingface.co/datasets/MhdMohammadi/SIDD-CC/resolve/5eb2ab6375d7f99f36b59bb5aacb46af18409412/Raw/train/Data/0076_004_N6_03200_00320_3200_L/0076_GT_RAW_094.MAT",
+          "sha256": "7f04153ddf5626d17ce0a847c3bb7d120aad131900c3c9109bb0a51b442fee08",
+          "bytes": 52516024
+        },
+        "metadata": {
+          "path": "data/raw/sidd-cc-subset/0076_004_N6_03200_00320_3200_L/0076_METADATA_RAW_094.MAT",
+          "url": "https://huggingface.co/datasets/MhdMohammadi/SIDD-CC/resolve/5eb2ab6375d7f99f36b59bb5aacb46af18409412/Raw/train/Data/0076_004_N6_03200_00320_3200_L/0076_METADATA_RAW_094.MAT",
+          "sha256": "f95f412fb84abf42c23847c468cdb9c2e5d6b33df467d42b885dcc299afedd6f",
+          "bytes": 592
+        }
+      }
+    }
+  ],
+  "original_train_patches": 192,
+  "expanded_train_patches": 256,
+  "physical_scene_assignments": {
+    "008": "train",
+    "004": "train",
+    "003": "train",
+    "009": "test",
+    "006": "train",
+    "007": "train",
+    "010": "test",
+    "005": "train",
+    "001": "validation",
+    "002": "validation"
+  },
+  "validation_arrays": "all 64 validation pairs exactly match original prepared validation arrays",
+  "original_test_report_unchanged": true,
+  "expanded_manifest_sha256": "2b1144b513c8662d624db136f581aedd4d123b8e261399b292b869a101922118"
+}

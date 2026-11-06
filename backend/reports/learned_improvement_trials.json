@@ -1,0 +1,136 @@
+{
+  "split": "validation",
+  "scene_ids": [
+    "001",
+    "002"
+  ],
+  "patch_count": 64,
+  "selection_rule": "Require lower LPIPS, no decrease in PSNR/SSIM and no increase in Delta E versus deployed baseline; choose lowest LPIPS among eligible candidates.",
+  "test_used_for_selection": false,
+  "experiments": {
+    "final-learned": {
+      "metrics": {
+        "psnr": 24.415385901777768,
+        "ssim": 0.9224964901804924,
+        "delta_e_00": 10.65382531285286,
+        "lpips": 0.2745109256939031
+      },
+      "best_validation_linear_l1": 0.044931603799341246,
+      "checkpoint_sha256": "2c5548564fd584216f95983bb4998f1f8ee24bd572c4b5ff4b9d2dc70a754301",
+      "config": {
+        "manifest": "data/processed/final/manifest.json",
+        "output": "runs/final-learned",
+        "checkpoint": "checkpoints/final-learned.pt",
+        "model_kind": "learned",
+        "architecture": "resize-v2",
+        "seed": 42,
+        "epochs": 30,
+        "batch_size": 4,
+        "learning_rate": 0.0002,
+        "base_channels": 16,
+        "threads": 2,
+        "device": "cpu"
+      },
+      "epochs_run": 30,
+      "train_samples": 192,
+      "validation_samples": 64,
+      "eligible": false
+    },
+    "learned-detail-candidate": {
+      "metrics": {
+        "psnr": 24.71439875849873,
+        "ssim": 0.918842576444149,
+        "delta_e_00": 10.85592619329691,
+        "lpips": 0.27249172411393374
+      },
+      "best_validation_linear_l1": 0.04726855663466267,
+      "checkpoint_sha256": "15dca2eb1513236beff4f56a225d35ceb4ab51514a3541312cb25c9ec9854709",
+      "config": {
+        "manifest": "data/processed/final/manifest.json",
+        "output": "runs/learned-detail-candidate",
+        "checkpoint": "checkpoints/learned-detail-candidate.pt",
+        "resume": "checkpoints/final-learned.pt",
+        "model_kind": "learned",
+        "architecture": "resize-v2",
+        "seed": 43,
+        "epochs": 24,
+        "batch_size": 4,
+        "learning_rate": 5e-05,
+        "base_channels": 16,
+        "threads": 2,
+        "device": "cpu",
+        "augment": true,
+        "gradient_weight": 0.15
+      },
+      "epochs_run": 24,
+      "train_samples": 192,
+      "validation_samples": 64,
+      "eligible": false
+    },
+    "learned-detail-refine": {
+      "metrics": {
+        "psnr": 24.753031838802137,
+        "ssim": 0.9216703958809376,
+        "delta_e_00": 10.938811019062996,
+        "lpips": 0.2756135466042906
+      },
+      "best_validation_linear_l1": 0.04601113381795585,
+      "checkpoint_sha256": "5aa5d3f496638eeb15864a279b134b013c89d550a5f236133f749bbccdfa2152",
+      "config": {
+        "manifest": "data/processed/final/manifest.json",
+        "output": "runs/learned-detail-refine",
+        "checkpoint": "checkpoints/learned-detail-refine.pt",
+        "resume": "checkpoints/final-learned.pt",
+        "model_kind": "learned",
+        "architecture": "resize-v2",
+        "seed": 43,
+        "epochs": 24,
+        "batch_size": 4,
+        "learning_rate": 2e-05,
+        "base_channels": 16,
+        "threads": 2,
+        "device": "cpu",
+        "augment": false,
+        "gradient_weight": 0.15
+      },
+      "epochs_run": 24,
+      "train_samples": 192,
+      "validation_samples": 64,
+      "eligible": false
+    },
+    "learned-detail-expanded": {
+      "metrics": {
+        "psnr": 25.353779428474162,
+        "ssim": 0.9259236827492714,
+        "delta_e_00": 11.60934979096055,
+        "lpips": 0.27984092506812885
+      },
+      "best_validation_linear_l1": 0.04511276792618446,
+      "checkpoint_sha256": "2d31de3baa6eee06a015e9a7db845947e187930f5ab63e1c58160e44aaa04e26",
+      "config": {
+        "manifest": "data/processed/detail/manifest.json",
+        "resume_manifest": "data/processed/final/manifest.json",
+        "output": "runs/learned-detail-expanded",
+        "checkpoint": "checkpoints/learned-detail-expanded.pt",
+        "resume": "checkpoints/final-learned.pt",
+        "model_kind": "learned",
+        "architecture": "resize-v2",
+        "seed": 42,
+        "epochs": 30,
+        "batch_size": 4,
+        "learning_rate": 5e-05,
+        "base_channels": 16,
+        "threads": 2,
+        "device": "cpu",
+        "augment": false,
+        "gradient_weight": 0.15
+      },
+      "epochs_run": 30,
+      "train_samples": 256,
+      "validation_samples": 64,
+      "eligible": false
+    }
+  },
+  "selected": "final-learned",
+  "production_weights_replaced": false
+}

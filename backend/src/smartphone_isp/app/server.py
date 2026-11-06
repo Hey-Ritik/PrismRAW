@@ -44,6 +44,9 @@ FRONTEND = ROOT.parent / "frontend"
 API_ONLY = os.environ.get("PRISMRAW_API_ONLY", "").lower() in {"1", "true"}
 RESULTS.mkdir(parents=True, exist_ok=True)
 app.mount("/results", StaticFiles(directory=RESULTS), name="results")
+failure_images = ROOT / "reports/failure_examples"
+if failure_images.exists():
+    app.mount("/failure-examples", StaticFiles(directory=failure_images), name="failure-examples")
 if not API_ONLY:
     app.mount("/static", StaticFiles(directory=FRONTEND / "static"), name="static")
 gate = asyncio.Semaphore(1)
@@ -155,3 +158,11 @@ def evaluation():
     if benchmark.exists():
         result["benchmark"] = json.loads(benchmark.read_text())
     return result
+
+
+@app.get("/api/failures")
+def failures():
+    path = ROOT / "reports/failure_analysis.json"
+    if not path.exists():
+        raise HTTPException(404, "Failure analysis is not packaged yet")
+    return json.loads(path.read_text(encoding="utf-8"))

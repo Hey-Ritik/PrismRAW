@@ -1,0 +1,15 @@
+manifest: data/processed/final/manifest.json
+output: runs/learned-detail-candidate
+checkpoint: checkpoints/learned-detail-candidate.pt
+resume: checkpoints/final-learned.pt
+model_kind: learned
+architecture: resize-v2
+seed: 43
+epochs: 24
+batch_size: 4
+learning_rate: 0.00005
+base_channels: 16
+threads: 2
+device: cpu
+augment: true
+gradient_weight: 0.15

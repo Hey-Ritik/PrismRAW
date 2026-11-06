@@ -19,11 +19,23 @@ from smartphone_isp.models.raw_to_rgb import RawToRGBNet, ResizeRawToRGBNet
 from smartphone_isp.training.alignment import crop_prediction
 
 
-def objective(prediction, target):
+def objective(prediction, target, gradient_weight=0.05):
     reconstruction = F.l1_loss(prediction, target)
     dx = F.l1_loss(prediction[..., 1:] - prediction[..., :-1], target[..., 1:] - target[..., :-1])
     dy = F.l1_loss(prediction[..., 1:, :] - prediction[..., :-1, :], target[..., 1:, :] - target[..., :-1, :])
-    return reconstruction + 0.05 * (dx + dy)
+    return reconstruction + gradient_weight * (dx + dy)
+
+
+def resume_manifest_matches(document, manifest, manifest_hash, previous_path=None):
+    if document.get("manifest_sha256") == manifest_hash:
+        return True
+    if not previous_path:
+        return False
+    previous_path = Path(previous_path)
+    previous = json.loads(previous_path.read_text(encoding="utf-8"))
+    return (hashlib.sha256(previous_path.read_bytes()).hexdigest() == document.get("manifest_sha256")
+            and previous["scene_assignments"] == manifest["scene_assignments"]
+            and previous.get("input_context", 0) == manifest.get("input_context", 0))
 
 
 def validation_loss(model, loader, device, context=0):
@@ -44,6 +56,8 @@ def train(config):
             raise ValueError(f"{key} must be positive")
     if not 0 < float(config["learning_rate"]) < 1:
         raise ValueError("Invalid learning rate")
+    if not 0 <= float(config.get("gradient_weight", 0.05)) <= 1:
+        raise ValueError("gradient_weight must be finite and between 0 and 1")
     seed = int(config["seed"])
     random.seed(seed)
     np.random.seed(seed)
@@ -70,6 +84,13 @@ def train(config):
     checkpoint_path = Path(config["checkpoint"])
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_hash = hashlib.sha256(Path(config["manifest"]).read_bytes()).hexdigest()
+    if config.get("resume"):
+        document = torch.load(config["resume"], map_location=device, weights_only=True)
+        expected_format = "prismraw-bayer-resize-v2" if kind == "learned" and architecture == "resize-v2" else "prismraw-bayer-v1" if kind == "learned" else "prismraw-residual-v1"
+        matching_manifest = resume_manifest_matches(document, manifest, manifest_hash, config.get("resume_manifest"))
+        if document.get("format") != expected_format or not matching_manifest:
+            raise ValueError("Resume checkpoint must match architecture and scene-separated manifest")
+        model.load_state_dict(document["state_dict"])
     initial_val = validation_loss(model, val_loader, device, context)
     report = {"scope": "Small CPU pilot; no benchmark/generalization claim", "config": config,
               "manifest_sha256": manifest_hash, "torch_version": str(torch.__version__),
@@ -84,7 +105,7 @@ def train(config):
         for source, conditions, target in train_loader:
             source, conditions, target = [value.to(device) for value in (source, conditions, target)]
             optimizer.zero_grad(set_to_none=True)
-            loss = objective(crop_prediction(model(source, conditions), target, context), target)
+            loss = objective(crop_prediction(model(source, conditions), target, context), target, float(config.get("gradient_weight", 0.05)))
             if not torch.isfinite(loss):
                 raise ValueError("Nonfinite training loss")
             loss.backward()

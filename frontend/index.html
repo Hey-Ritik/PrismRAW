@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#15251f"><title>PrismRAW · Camera studio</title>
-  <link rel="stylesheet" href="/static/style.css?v=2">
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body>
 <header class="topbar">
   <a class="brand" href="/" aria-label="PrismRAW home"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 34 31H2Z"/><path d="m18 3 6 28M2 31l19-14"/></svg><span>Prism<b>RAW</b></span></a>
   <nav aria-label="Studio navigation"><a class="nav-active" href="#studio">Studio</a><a href="#benchmark">Evaluation</a></nav>
-  <div class="connection"><span class="status-dot"></span><span id="connection">Connecting to processing engine</span><span class="team-tag">T47</span></div>
+  <div class="connection"><span class="status-dot"></span><span id="connection">Connecting to processing engine</span><button id="retry-connection" class="secondary" hidden>Retry connection</button><span class="team-tag">T47</span></div>
 </header>
 <main>
   <section class="intro">
@@ -54,6 +54,8 @@
         </div>
         <div class="result-meta"><span id="dimensions"></span><span id="duration"></span></div>
         <div id="output-grid" class="output-grid" role="group" aria-label="Select a reconstruction"></div>
+        <div id="comparison-summary" class="comparison-summary" aria-label="Comparison highlights"></div>
+        <p class="hint">Each highlight measures a different trade-off. Timings are single runs, not benchmark rankings.</p>
         <p id="metric-context" class="hint" aria-live="polite"></p>
         <div class="quick-metrics"><div><span>RECONSTRUCTION FIDELITY</span><strong id="quick-psnr">—</strong><small>PSNR · higher is closer to reference</small></div><div><span>COLOUR DIFFERENCE</span><strong id="quick-color">—</strong><small>Delta E 00 · lower is closer</small></div><div><span>PROCESSING TIME</span><strong id="quick-time">—</strong><small id="compute-note">Measured pipeline · CPU</small></div></div>
         <details class="measurement-panel panel"><summary><span>All pipeline measurements</span><span class="detail-right">Compare the numbers <b>+</b></span></summary><p id="reference-kind" class="hint"></p><div class="table-scroll"><table><thead><tr><th>Pipeline</th><th title="Reconstruction fidelity; higher is better">PSNR ↑</th><th title="Structural similarity; higher is better">SSIM ↑</th><th title="Colour error; lower is better">ΔE00 ↓</th><th title="Perceptual distance; lower is better">LPIPS ↓</th><th>Time</th></tr></thead><tbody id="metrics"></tbody></table></div><p class="hint">CPU timings are single runs, excluding model loading and file I/O. Reference scores apply to the supplied rendering, not universal camera accuracy.</p></details>
@@ -63,9 +65,11 @@
   </div>
 
   <section id="benchmark" class="benchmark panel"><div class="benchmark-intro"><p class="eyebrow">THE BIGGER PICTURE</p><h2>A good image is only half the story.</h2><p>Explore measured quality, model size and compute costs across the held-out scenes.</p></div><button class="secondary" id="show-evaluation" aria-expanded="false">View evaluation report <span>↗</span></button><div id="evaluation" hidden></div></section>
+  <section class="benchmark panel"><div class="benchmark-intro"><p class="eyebrow">LEARN FROM THE LIMITS</p><h2>Where reconstruction falls short.</h2><p>Measured failure examples from held-out scenes, with all methods beside the reference.</p></div><button class="secondary" id="show-failures" aria-expanded="false">View failure examples ↗</button><div id="failures" hidden></div></section>
   <footer><span class="footer-brand">PrismRAW <i>/</i> Team T47</span><span>Computer Vision Hackathon · Problem 2</span><span>Research prototype · Approximate colour calibration</span></footer>
 </main>
 <dialog id="lightbox"><div class="lightbox-bar"><p id="large-caption"></p><button id="close-lightbox" aria-label="Close image preview">×</button></div><img id="large-image" alt="Enlarged reconstruction"></dialog>
 <script src="/static/config.js"></script>
-<script src="/static/app.js?v=4"></script>
+<script src="/static/comparison.js"></script>
+<script src="/static/app.js?v=5"></script>
 </body></html>

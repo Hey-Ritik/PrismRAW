@@ -7,6 +7,17 @@ from smartphone_isp.app.server import app
 
 
 class AppTests(unittest.TestCase):
+    def test_packaged_failure_examples_are_accessible(self):
+        with patch("smartphone_isp.app.server.warmup"), TestClient(app) as client:
+            response = client.get('/api/failures')
+            self.assertEqual(response.status_code, 200)
+            report = response.json()
+            self.assertEqual(len(report['examples']), 2)
+            for example in report['examples']:
+                image = client.get(example['image'])
+                self.assertEqual(image.status_code, 200)
+                self.assertIn('image/png', image.headers['content-type'])
+
     def test_home_and_health(self):
         with patch("smartphone_isp.app.server.warmup"), TestClient(app) as client:
             response = client.get("/")

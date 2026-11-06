@@ -2,14 +2,28 @@
 
 from pathlib import Path
 import tempfile
+import json
+import hashlib
 import unittest
 import torch
 from smartphone_isp.models.residual_unet import ResidualUNet
 from smartphone_isp.pipelines.hybrid import load_model
-from smartphone_isp.training.train import objective
+from smartphone_isp.training.train import objective, resume_manifest_matches
 
 
 class TrainingTests(unittest.TestCase):
+    def test_expanded_training_must_preserve_holdout_scenes(self):
+        previous = {"scene_assignments": {"001": "validation", "003": "train", "009": "test"}, "input_context": 4}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/"manifest.json"
+            path.write_text(json.dumps(previous))
+            document = {"manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            self.assertTrue(resume_manifest_matches(document, previous, "new-data-hash", path))
+            unsafe = {**previous, "scene_assignments": {**previous["scene_assignments"], "009": "train"}}
+            self.assertFalse(resume_manifest_matches(document, unsafe, "new-data-hash", path))
+            self.assertFalse(resume_manifest_matches(document, previous, "new-data-hash"))
+            self.assertFalse(resume_manifest_matches(document, {**previous, "input_context": 0}, "new-data-hash", path))
+
     def test_update_and_checkpoint_roundtrip(self):
         torch.set_num_threads(2)
         torch.manual_seed(42)
