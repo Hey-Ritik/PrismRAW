@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from smartphone_isp.pipelines.classical import bilateral, process, render_linear
 from smartphone_isp.pipelines.hybrid import process_hybrid, refine
+from smartphone_isp.pipelines.learned import process_learned
+from smartphone_isp.models.raw_to_rgb import ResizeRawToRGBNet
 from smartphone_isp.models.residual_unet import ResidualUNet
 
 
@@ -26,6 +28,37 @@ def reference_bilateral(image, sigma):
 
 
 class LatencyTests(unittest.TestCase):
+    def test_prepared_hybrid_avoids_reprocessing_and_is_exact(self):
+        torch.set_num_threads(2)
+        torch.manual_seed(42)
+        model=ResidualUNet(4).eval()
+        model.input_stage='denoised'
+        raw=np.random.default_rng(42).random((32,40),dtype=np.float32)
+        metadata={'normalized':True,'bayer_pattern':'RGGB','white_balance':[1,1,1],
+                  'camera_to_linear_srgb':np.eye(3).tolist()}
+        _,stages,stats=process(raw,metadata)
+        expected=process_hybrid(raw,metadata,model)[0]
+        with patch('smartphone_isp.pipelines.hybrid.process') as duplicate:
+            actual=process_hybrid(raw,metadata,model,prepared=(stages['denoised_linear'],stats))[0]
+            duplicate.assert_not_called()
+        np.testing.assert_array_equal(actual,expected)
+        with self.assertRaises(ValueError):
+            process_hybrid(raw,metadata,model,adaptive=False,prepared=(stages['denoised_linear'],stats))
+
+    def test_learned_single_render_matches_previous_second_render(self):
+        torch.set_num_threads(2)
+        torch.manual_seed(42)
+        model=ResizeRawToRGBNet(4).eval()
+        raw=np.random.default_rng(42).random((32,40),dtype=np.float32)
+        metadata={'normalized':True,'bayer_pattern':'RGGB','white_balance':[1,1,1],
+                  'camera_to_linear_srgb':np.eye(3).tolist()}
+        _,stages,_=process_learned(raw,metadata,model,1.7)
+        expected=render_linear(stages['predicted_linear'],1.7,0.12)[0]
+        with patch('smartphone_isp.pipelines.learned.render_linear',wraps=render_linear) as render:
+            actual=process_learned(raw,metadata,model,1.7,sharpen=0.12)[0]
+            self.assertEqual(render.call_count,1)
+        np.testing.assert_array_equal(actual,expected)
+
     def test_reused_buffers_preserve_bilateral_results(self):
         rng=np.random.default_rng(42)
         for dtype in (np.float32,np.float64):

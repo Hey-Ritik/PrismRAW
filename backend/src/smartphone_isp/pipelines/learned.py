@@ -44,7 +44,7 @@ def reconstruct(model, packed, calibration, device="cpu"):
     return result[0].permute(1, 2, 0).float().cpu().numpy()
 
 
-def process_learned(raw, metadata, model, exposure=1.0):
+def process_learned(raw, metadata, model, exposure=1.0, sharpen=0.0):
     started = time.perf_counter()
     raw = np.asarray(raw, dtype=np.float32)
     if raw.ndim != 2 or min(raw.shape) < 8 or not np.isfinite(raw).all():
@@ -63,7 +63,7 @@ def process_learned(raw, metadata, model, exposure=1.0):
         normalized = normalize_raw(raw, metadata["black_level"], metadata["white_level"])
     packed = pack_bayer(normalized, metadata["bayer_pattern"])
     linear = reconstruct(model, packed, calibration_vector(metadata))
-    output, toned, encoded = render_linear(linear, exposure)
+    output, toned, encoded = render_linear(linear, exposure, sharpen)
     return output, {"normalized_mosaic": normalized, "predicted_linear": linear,
                     "tone_mapped_linear": toned, "encoded_srgb": encoded}, {
         "method": "learned", "shape": list(output.shape), "exposure_gain": exposure,

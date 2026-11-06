@@ -30,10 +30,17 @@ def refine(model, linear, noise, illumination, device="cpu"):
     return result[0].permute(1, 2, 0).float().cpu().numpy()
 
 
-def process_hybrid(raw, metadata, model, adaptive=True, device="cpu"):
+def process_hybrid(raw, metadata, model, adaptive=True, device="cpu", prepared=None):
+    """Reuse a (denoised RGB, stats) pair only from this exact capture/settings."""
     started = time.perf_counter()
     use_denoised = getattr(model, "input_stage", "linear") == "denoised"
-    _, stages, stats = process(raw, metadata, adaptive=adaptive, denoise=use_denoised, render_output=False)
+    if prepared is not None and use_denoised:
+        source, original_stats = prepared
+        if source.shape != (*raw.shape, 3) or original_stats["adaptive"] != adaptive:
+            raise ValueError("Prepared stages must match the capture dimensions and adaptive setting")
+        stages, stats = {"denoised_linear": source}, dict(original_stats)
+    else:
+        _, stages, stats = process(raw, metadata, adaptive=adaptive, denoise=use_denoised, render_output=False)
     source = stages["denoised_linear"] if use_denoised else stages["linear_srgb"]
     refined = refine(model, source, stats["noise_estimate"], stats["median_linear_luminance"], device)
     output, toned, encoded = render_linear(refined, stats["exposure_gain"], stats["sharpen_strength"])

@@ -1,0 +1,85 @@
+{
+  "scope": "Complete local compare() wall time, including LPIPS for classical/learned/hybrid, images, JSON and ZIP creation, excludes HTTP/network, model loads warmed. Same 256px sample 003; 2 threads; 3 warmups, 10 runs. Not standalone hybrid latency or Render speed.",
+  "before_ms": 670.2726499970595,
+  "after_ms": 641.18684999994,
+  "reduction_percent": 4.339398302652968,
+  "before_wall_times_ms": [
+    701.63990000583,
+    663.9594000007492,
+    671.7274999973597,
+    649.4259000028251,
+    682.6440000004368,
+    675.8151999965776,
+    682.2664999999688,
+    668.8177999967593,
+    645.5112999974517,
+    650.8141999947838
+  ],
+  "after_wall_times_ms": [
+    644.4663000002038,
+    633.6621000009472,
+    650.1796000011382,
+    635.9903999982635,
+    635.6276000005892,
+    656.2494000027073,
+    659.7996999989846,
+    672.5181999936467,
+    637.9073999996763,
+    634.8925999991479
+  ],
+  "output_pngs": "exact SHA256 match",
+  "reference_metrics_including_lpips": "exact match",
+  "timing_scope": "Hybrid totals include the shared classical cost, measured once and reused; incremental_processing_ms records only each method's additional work. These are not isolated standalone benchmarks.",
+  "shared_buffer_bytes": 786432,
+  "platform": "Windows-11-10.0.26300-SP0",
+  "additional_equivalence_checks_64px": [
+    {
+      "scene": "001",
+      "adaptive": false,
+      "fp16": false,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "001",
+      "adaptive": true,
+      "fp16": false,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "003",
+      "adaptive": false,
+      "fp16": true,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "003",
+      "adaptive": true,
+      "fp16": true,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "004",
+      "adaptive": false,
+      "fp16": false,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "004",
+      "adaptive": true,
+      "fp16": false,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "005",
+      "adaptive": false,
+      "fp16": false,
+      "pngs_and_metrics": "exact match"
+    },
+    {
+      "scene": "005",
+      "adaptive": true,
+      "fp16": false,
+      "pngs_and_metrics": "exact match"
+    }
+  ]
+}

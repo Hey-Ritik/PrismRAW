@@ -28,10 +28,11 @@ class AppMemoryTests(unittest.TestCase):
 
         def classical(*args, **kwargs):
             output, stages, stats = original_process(*args, **kwargs)
-            classical_refs.extend(weakref.ref(value) for value in [output, *stages.values()])
+            shared = stages['denoised_linear']
+            classical_refs.extend(weakref.ref(value) for value in [output, *stages.values()] if value is not shared)
             return output, stages, stats
 
-        def learned(*args):
+        def learned(*args, **kwargs):
             self.assertTrue(all(ref() is None for ref in classical_refs))
             display = np.full((16, 16, 3), 0.2, dtype=np.float32)
             linear = display.copy()

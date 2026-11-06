@@ -1,5 +1,7 @@
 # PrismRAW
 
+The comparison also reuses classical stages for hybrid and renders learned output once. Fresh complete-comparison wall time improved from 670.27 to 641.19 ms (4.34%) with exact tested PNG/metric equality and LPIPS enabled. See [comparison timing and memory accounting](docs/comparison-latency.md); this is separate from standalone hybrid latency.
+
 CPU pipeline optimization reduced freshly measured hybrid latency from 103.69 to 77.83 ms (24.94%) on the same 256px local benchmark while preserving exact tested image outputs and keeping LPIPS enabled. See [the latency protocol and limits](docs/latency-optimization.md); the historical benchmark is retained separately.
 
 The studio includes backend wake-up/retry handling, per-capture quality/latency highlights, and measured failure examples. Three learned-model improvement trials were evaluated; none passed the quality promotion gate, so deployed weights remain unchanged. See [the measured experiment notes](docs/model-improvement.md).

@@ -78,6 +78,8 @@ def compare(raw, metadata, clean=None, reference_rgb=None, adaptive=True, method
 
     classical, stages, stats = process(raw, metadata, adaptive=adaptive)
     timings = {"classical": stats["processing_ms"]}
+    incremental_timings = dict(timings)
+    prepared = (stages["denoised_linear"], stats)
     del stages["denoised_linear"], stages["tone_mapped_linear"]
     # Save previews before neural inference so stage arrays do not overlap with
     # network activations or the perceptual metric's buffers.
@@ -119,23 +121,26 @@ def compare(raw, metadata, clean=None, reference_rgb=None, adaptive=True, method
                  else cached_model(method, CHECKPOINTS[method].stat().st_mtime_ns))
         before = time.perf_counter()
         if method == "learned":
-            unused_display, intermediate, method_stats = process_learned(raw, metadata, model, stats["exposure_gain"])
-            predicted = intermediate["predicted_linear"]
-            del unused_display, intermediate, method_stats
-            image = render_linear(predicted, stats["exposure_gain"], stats["sharpen_strength"])[0]
-            del predicted
-        else:
-            image, intermediate, method_stats = process_hybrid(raw, metadata, model, adaptive=adaptive)
+            image, intermediate, method_stats = process_learned(raw, metadata, model, stats["exposure_gain"], sharpen=stats["sharpen_strength"])
             del intermediate, method_stats
-        timings[method] = (time.perf_counter() - before) * 1000
+        else:
+            image, intermediate, method_stats = process_hybrid(raw, metadata, model, adaptive=adaptive, prepared=prepared)
+            del intermediate, method_stats
+        elapsed = (time.perf_counter() - before) * 1000
+        incremental_timings[method] = elapsed
+        shared = method != "learned" and getattr(model, "input_stage", "linear") == "denoised"
+        timings[method] = elapsed + (stats["processing_ms"] if shared else 0)
         del model
         record(method, image)
         del image
+    del prepared
     if target is not None:
         images["reference"] = save("reference", target)
     public_metadata = {key: metadata[key] for key in ("normalized", "bayer_pattern", "white_balance", "camera_to_linear_srgb", "colour_transform", "dataset", "scene_id") if key in metadata}
     report = {"id": identifier, "images": images, "intermediates": intermediate_urls,
               "processing_ms": timings, "metrics": metrics, "reference_kind": target_kind,
+              "incremental_processing_ms": incremental_timings,
+              "timing_scope": "Hybrid totals include the shared classical cost, measured once and reused; incremental_processing_ms records only each method's additional work. These are not isolated standalone benchmarks.",
               "crop_yxhw": [y+metadata.get("sensor_crop_yxhw", [0, 0])[0], x+metadata.get("sensor_crop_yxhw", [0, 0])[1], h, w],
               "original_shape": metadata.get("original_sensor_shape", list(original_shape)),
               "adaptive": adaptive, "metadata": public_metadata,
