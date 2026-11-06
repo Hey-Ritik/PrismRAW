@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def load_dng(path):
+def load_dng(path, max_side=None):
     import rawpy
     try:
         camera = rawpy.imread(str(path))
@@ -12,7 +12,19 @@ def load_dng(path):
     with camera:
         if camera.raw_pattern is None or camera.raw_pattern.shape != (2, 2):
             raise ValueError("Only 2x2 Bayer RAW sensors are supported")
-        colors = camera.raw_colors_visible.copy()
+        original_shape = camera.raw_image_visible.shape
+        if len(original_shape) != 2 or np.prod(original_shape) > 24_000_000:
+            raise ValueError("DNG sensor must be 2D and no larger than 24 megapixels")
+        height, width = [int(n)//2*2 for n in original_shape]
+        y, x = 0, 0
+        if max_side is not None:
+            if max_side < 16 or max_side % 2:
+                raise ValueError("DNG crop must be even and at least 16 pixels")
+            height, width = min(height, max_side), min(width, max_side)
+            y, x = [(int(n)-size)//4*2 for n, size in zip(original_shape, (height, width))]
+        region = (slice(y, y+height), slice(x, x+width))
+        # Crop before float conversion and per-pixel calibration allocations.
+        colors = camera.raw_colors_visible[region].copy()
         desc = camera.color_desc.decode("ascii").rstrip("\x00")
         if desc[:3] != "RGB":
             raise ValueError("Unsupported camera colour layout")
@@ -27,7 +39,7 @@ def load_dng(path):
         # Some profiles leave the second green's white level unspecified.
         if len(white) == 4 and white[3] <= black[3]:
             white[3] = white[1]
-        raw = camera.raw_image_visible.astype(np.float32)
+        raw = camera.raw_image_visible[region].astype(np.float32)
         raw = np.clip((raw - black[colors]) / (white[colors] - black[colors]), 0, 1)
         gains = np.asarray(camera.camera_whitebalance[:3], dtype=np.float32)
         if not np.isfinite(gains).all() or np.any(gains <= 0):
@@ -61,7 +73,8 @@ def load_dng(path):
         metadata = {"normalized": True, "bayer_pattern": pattern, "white_balance": gains.tolist(),
                     "camera_to_linear_srgb": (xyz_to_rgb @ camera_to_xyz).tolist(),
                     "colour_transform": "Approximate LibRaw/profile single-illuminant camera-to-XYZ, neutral-normalized to D65; not full dual-illuminant DNG calibration",
-                    "orientation": "sensor order; orientation metadata not applied", "sensor_flip": int(camera.sizes.flip)}
+                    "orientation": "sensor order; orientation metadata not applied", "sensor_flip": int(camera.sizes.flip),
+                    "original_sensor_shape": list(original_shape), "sensor_crop_yxhw": [y, x, height, width]}
     h, w = raw.shape
     metadata["even_crop"] = [h - h % 2, w - w % 2]
     return raw[:h-h%2, :w-w%2], metadata

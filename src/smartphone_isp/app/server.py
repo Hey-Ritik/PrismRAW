@@ -16,14 +16,15 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from PIL import Image
 
-from smartphone_isp.app.engine import ROOT, RESULTS, CHECKPOINTS, cached_model, compare, available_models
+from smartphone_isp.app.engine import ROOT, RESULTS, CHECKPOINTS, cached_model, compare, available_models, crop_sensor
+from smartphone_isp.app.settings import runtime_settings
 from smartphone_isp.data.arrays import load_raw
 from smartphone_isp.data.dng import load_dng
 
 def warmup():
     import torch
     from smartphone_isp.evaluation.metrics import perceptual_model
-    torch.set_num_threads(2)
+    torch.set_num_threads(runtime_settings().threads)
     for method, enabled in available_models().items():
         if enabled and method != "classical":
             cached_model(method, CHECKPOINTS[method].stat().st_mtime_ns)
@@ -52,7 +53,8 @@ def index():
 def health():
     samples = [{"id": path.stem, "name": {"001": "Samsung S6 · low light", "003": "Nexus 6 · normal light", "004": "Google Pixel · indoor", "005": "iPhone 7 · low light"}.get(path.stem, path.stem)}
                for path in sorted((ROOT / "data/processed/demo").glob("*.json"))]
-    return {"status": "ok", "models": available_models(), "samples": samples, "device": "CPU", "max_crop": 512}
+    settings = runtime_settings()
+    return {"status": "ok", "models": available_models(), "samples": samples, "device": "CPU", "max_crop": settings.max_crop, "hosted": settings.hosted}
 
 
 @app.post("/api/sample/{sample_id}")
@@ -94,7 +96,7 @@ async def upload(raw: UploadFile = File(...), metadata: UploadFile | None = File
                     raise ValueError("Upload Bayer RAW as DNG, NPY, NPZ, or MAT; JPEG is not RAW sensor data")
                 path = await store(raw, folder / f"raw{suffix}", 64*1024*1024)
                 if suffix == ".dng":
-                    array, meta = await run_in_threadpool(load_dng, path)
+                    array, meta = await run_in_threadpool(load_dng, path, max_side=runtime_settings().max_crop)
                 else:
                     if metadata is None:
                         raise ValueError("Array uploads require camera metadata JSON")
@@ -103,6 +105,16 @@ async def upload(raw: UploadFile = File(...), metadata: UploadFile | None = File
                     if not isinstance(meta, dict):
                         raise ValueError("Camera metadata must be a JSON object")
                     array = await run_in_threadpool(load_raw, path, key)
+                _, local_crop = crop_sensor(array)
+                def reference_crop(shape):
+                    if tuple(shape) == tuple(array.shape):
+                        return local_crop
+                    if tuple(shape) == tuple(meta.get("original_sensor_shape", ())):
+                        outer = meta["sensor_crop_yxhw"]
+                        return (outer[0]+local_crop[0], outer[1]+local_crop[1], local_crop[2], local_crop[3])
+                    if tuple(shape) == tuple(local_crop[2:]):
+                        return (0, 0, *local_crop[2:])
+                    raise ValueError("Reference must match sensor dimensions or the processed crop")
                 clean, rgb = None, None
                 if reference is not None and reference.filename:
                     ext = Path(reference.filename).suffix.lower()
@@ -111,9 +123,12 @@ async def upload(raw: UploadFile = File(...), metadata: UploadFile | None = File
                         with Image.open(ref_path) as image:
                             if image.width * image.height > 24_000_000:
                                 raise ValueError("RGB reference exceeds 24 megapixels")
-                            rgb = np.asarray(image.convert("RGB"), dtype=np.float32) / 255
+                            y, x, h, w = reference_crop((image.height, image.width))
+                            rgb = np.asarray(image.crop((x, y, x+w, y+h)).convert("RGB"), dtype=np.float32) / 255
                     elif ext in {".npy", ".npz", ".mat"}:
                         clean = await run_in_threadpool(load_raw, ref_path, key)
+                        y, x, h, w = reference_crop(clean.shape)
+                        clean = clean[y:y+h, x:x+w].copy()
                     else:
                         raise ValueError("Reference must be aligned RGB PNG/JPEG or matching clean RAW array")
                 methods = ("learned", "hybrid", "optimized") if include_fp16 else ("learned", "hybrid")

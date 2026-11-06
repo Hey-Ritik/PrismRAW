@@ -9,7 +9,7 @@ root = Path.cwd()
 files = []
 for folder in ("src", "app", "configs", "docs", "reports", "scripts", "tests", "data/processed/demo"):
     files.extend(path for path in (root / folder).rglob("*") if path.is_file() and "__pycache__" not in path.parts)
-for name in ("README.md", "pyproject.toml", "Dockerfile", ".dockerignore", ".gitignore", ".env.example", "run_local.ps1", "THIRD_PARTY_NOTICES.md"):
+for name in ("README.md", "pyproject.toml", "Dockerfile", ".dockerignore", ".gitignore", ".env.example", "run_local.ps1", "THIRD_PARTY_NOTICES.md", "render.yaml"):
     if (root / name).exists():
         files.append(root / name)
 for name in ("final-hybrid.pt", "final-learned.pt", "final-hybrid-fp16.pt"):

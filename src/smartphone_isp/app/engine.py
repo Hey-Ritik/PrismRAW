@@ -14,6 +14,7 @@ import torch
 from smartphone_isp.pipelines.classical import process, render_linear
 from smartphone_isp.pipelines.hybrid import load_model as load_hybrid, process_hybrid
 from smartphone_isp.pipelines.learned import load_model as load_learned, process_learned
+from smartphone_isp.app.settings import runtime_settings
 
 ROOT = Path(__file__).resolve().parents[3]
 RESULTS = ROOT / "outputs" / "app"
@@ -32,7 +33,8 @@ def available_models():
     return {"classical": True, **{key: path.exists() for key, path in CHECKPOINTS.items()}}
 
 
-def crop_sensor(raw, limit=512):
+def crop_sensor(raw, limit=None):
+    limit = runtime_settings().max_crop if limit is None else limit
     raw = np.asarray(raw)
     if raw.ndim != 2 or raw.size > 24_000_000 or min(raw.shape) < 16 or not np.isfinite(raw).all():
         raise ValueError("Expected a finite 2D Bayer sensor array, 16 pixels minimum and 24 megapixels maximum")
@@ -50,15 +52,16 @@ def cleanup():
 
 
 def compare(raw, metadata, clean=None, reference_rgb=None, adaptive=True, methods=None):
-    torch.set_num_threads(2)
+    torch.set_num_threads(runtime_settings().threads)
     started = time.perf_counter()
     original_shape = raw.shape
     raw, crop = crop_sensor(raw)
     y, x, h, w = crop
     if clean is not None:
-        if clean.shape != original_shape:
+        if clean.shape == original_shape:
+            clean = clean[y:y+h, x:x+w]
+        elif clean.shape != raw.shape:
             raise ValueError("Clean RAW must match the input sensor array exactly")
-        clean = clean[y:y+h, x:x+w]
     if reference_rgb is not None:
         if reference_rgb.shape[:2] == original_shape:
             reference_rgb = reference_rgb[y:y+h, x:x+w]
@@ -114,10 +117,11 @@ def compare(raw, metadata, clean=None, reference_rgb=None, adaptive=True, method
     public_metadata = {key: metadata[key] for key in ("normalized", "bayer_pattern", "white_balance", "camera_to_linear_srgb", "colour_transform", "dataset", "scene_id") if key in metadata}
     report = {"id": identifier, "images": images, "intermediates": intermediate_urls,
               "processing_ms": timings, "metrics": metrics, "reference_kind": target_kind,
-              "crop_yxhw": list(crop), "original_shape": list(original_shape),
+              "crop_yxhw": [y+metadata.get("sensor_crop_yxhw", [0, 0])[0], x+metadata.get("sensor_crop_yxhw", [0, 0])[1], h, w],
+              "original_shape": metadata.get("original_sensor_shape", list(original_shape)),
               "adaptive": adaptive, "metadata": public_metadata,
               "settings": {key: stats[key] for key in ("noise_estimate", "exposure_gain", "bilateral_sigma", "sharpen_strength")},
-              "limitations": ["Model quality varies; classical is the current reference baseline", "Camera colour calibration is approximate", "Local CPU timings exclude model loading and file I/O; these are single runs, not benchmark medians", "RAW processing uses a central crop up to 512x512, preserving Bayer phase"],
+              "limitations": ["Model quality varies; classical is the current reference baseline", "Camera colour calibration is approximate", "CPU timings exclude model loading and file I/O; these are single runs, not benchmark medians", f"RAW processing uses a central crop up to {runtime_settings().max_crop}x{runtime_settings().max_crop}, preserving Bayer phase"],
               "total_ms": (time.perf_counter() - started) * 1000}
     (folder / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     with zipfile.ZipFile(folder / "comparison.zip", "w", zipfile.ZIP_DEFLATED) as archive:

@@ -1,0 +1,90 @@
+{
+  "blueprint": "local structural checks passed; remote validation/build still required",
+  "asset_count": 15,
+  "asset_bytes": 5954377,
+  "assets": [
+    {
+      "path": "checkpoints/final-hybrid.pt",
+      "bytes": 483245,
+      "sha256": "d5e2b6d84f0dfb9b120a88248bb756ed9055d16f8621835df43b9d1980485d3e"
+    },
+    {
+      "path": "checkpoints/final-learned.pt",
+      "bytes": 503183,
+      "sha256": "2c5548564fd584216f95983bb4998f1f8ee24bd572c4b5ff4b9d2dc70a754301"
+    },
+    {
+      "path": "checkpoints/final-hybrid-fp16.pt",
+      "bytes": 245497,
+      "sha256": "1f35c51f4520201c4ea63c2e0c1c21d4ead54952c41016119195b4d05002be22"
+    },
+    {
+      "path": "data/processed/demo/001.json",
+      "bytes": 710,
+      "sha256": "071cbbe4c4d1ab8f59b5f5778c860c5ccd3e2d1cfb18a46b93b7db6ea8b777d4"
+    },
+    {
+      "path": "data/processed/demo/001-noisy.npy",
+      "bytes": 589952,
+      "sha256": "e48270622cdaa9118c5461d98db6b57dfb672e03073630f8285d7473e061df3b"
+    },
+    {
+      "path": "data/processed/demo/001-clean.npy",
+      "bytes": 589952,
+      "sha256": "633f974d872d1420ddeb3a5ac41d60b056b2f1856b7a0509aea0c52eef761369"
+    },
+    {
+      "path": "data/processed/demo/003.json",
+      "bytes": 700,
+      "sha256": "8ad83797542bc3e27dc0dd5ce983be60bce39c8458a55b13766087a7326c6c49"
+    },
+    {
+      "path": "data/processed/demo/003-noisy.npy",
+      "bytes": 589952,
+      "sha256": "d741f2abaf49a2d4bed33cf98d04f591a1f341b8756dfedd2488b98a1057ab3f"
+    },
+    {
+      "path": "data/processed/demo/003-clean.npy",
+      "bytes": 589952,
+      "sha256": "5e81c75f371981b1da5123d5334826587ba7358343f52ec413a3ac75a5840d3e"
+    },
+    {
+      "path": "data/processed/demo/004.json",
+      "bytes": 712,
+      "sha256": "a52a200873ffeacada13142fbf6797608b55e7b1726a69eef81db5b83d0927f4"
+    },
+    {
+      "path": "data/processed/demo/004-noisy.npy",
+      "bytes": 589952,
+      "sha256": "c2dfe207ebd14c29b2463d281606c18c4e7198a2e85e640ac6411110177e49ba"
+    },
+    {
+      "path": "data/processed/demo/004-clean.npy",
+      "bytes": 589952,
+      "sha256": "ea70032a3138e2ecaf372b8f668acd5dd9eb412027df842e8d57cd366dec9b7c"
+    },
+    {
+      "path": "data/processed/demo/005.json",
+      "bytes": 714,
+      "sha256": "48a5ac5d89fda5012f15722bb38915c0018409515a3df4a57d931aa1b2017e1d"
+    },
+    {
+      "path": "data/processed/demo/005-noisy.npy",
+      "bytes": 589952,
+      "sha256": "005b018c2c62214dc8578d0fa92444793cf232776d99293cc736152517830f4e"
+    },
+    {
+      "path": "data/processed/demo/005-clean.npy",
+      "bytes": 589952,
+      "sha256": "a64678b30fe726ae360879d79ca85c8f8b4b3efc5cee27e67e65c6a62af4c592"
+    }
+  ],
+  "environment": {
+    "PORT": "7860",
+    "PRISMRAW_HOSTED": "1",
+    "PRISMRAW_MAX_CROP": "256",
+    "PRISMRAW_TORCH_THREADS": "1"
+  },
+  "docker_build": "not run: Docker unavailable in current environment",
+  "render_deployment": "not created; account authorization required"
+}

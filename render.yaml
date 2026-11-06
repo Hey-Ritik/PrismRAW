@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: prismraw-t47
+    runtime: docker
+    plan: free
+    repo: https://github.com/Hey-Ritik/PrismRAW
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: PORT
+        value: "7860"
+      - key: PRISMRAW_HOSTED
+        value: "1"
+      - key: PRISMRAW_MAX_CROP
+        value: "256"
+      - key: PRISMRAW_TORCH_THREADS
+        value: "1"

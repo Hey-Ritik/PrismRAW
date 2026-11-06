@@ -146,7 +146,7 @@ async function request(url, options) {
     if (!response.ok) throw Error(typeof data.detail === 'string' ? data.detail : 'Check your file format, camera metadata and reference dimensions.');
     render(data);
     if (window.innerWidth <= 800) document.querySelector('.workspace').scrollIntoView({behavior: 'smooth', block: 'start'});
-  } catch (exception) { error(exception.message || 'Unable to reach the local engine.'); }
+  } catch (exception) { error(exception.message || 'Unable to reach the processing engine.'); }
   finally { busy(false); }
 }
 
@@ -218,7 +218,11 @@ function chooseScene(id) {
 }
 $('scene').onchange = () => chooseScene($('scene').value);
 fetch('/api/health').then(response => { if (!response.ok) throw Error(); return response.json(); }).then(data => {
-  $('connection').textContent = `Local engine · ${data.device}`;
+  const engineName = data.hosted ? 'Hosted engine' : 'Local engine';
+  $('connection').textContent = `${engineName} · ${data.device}`;
+  $('privacy-message').textContent = data.hosted ? 'Uploads processed on hosting server' : 'Processing stays on this machine';
+  $('compute-note').textContent = `Selected pipeline · ${data.hosted ? 'server' : 'local'} CPU`;
+  $('crop-note').textContent = `We process a central crop up to ${data.max_crop} × ${data.max_crop}, preserving sensor orientation and Bayer phase.`;
   $('scene').replaceChildren(); $('sample-cards').replaceChildren();
   data.samples.forEach(sample => {
     const option = document.createElement('option'); option.value = sample.id; option.textContent = sample.name; $('scene').append(option);
@@ -228,6 +232,6 @@ fetch('/api/health').then(response => { if (!response.ok) throw Error(); return 
     const text = document.createElement('span'); text.className = 'sample-text'; const title = document.createElement('strong'), subtitle = document.createElement('small'); title.textContent = info[0]; subtitle.textContent = info[1]; text.append(title, subtitle); card.append(img, text); card.onclick = () => chooseScene(sample.id); $('sample-cards').append(card);
   });
   if (data.samples.length) { chooseScene(data.samples[0].id); $('run-sample').disabled = false; $('quick-start').disabled = false; }
-  else { $('run-sample').disabled = true; $('quick-start').disabled = true; $('connection').textContent = 'Local engine · sample assets missing'; }
-  if (!data.models.learned || !data.models.hybrid) $('connection').textContent = 'Local engine · classical ready';
-}).catch(() => error('The local engine is unavailable. Start run_local.ps1 and reload this page.'));
+  else { $('run-sample').disabled = true; $('quick-start').disabled = true; $('connection').textContent = `${engineName} · sample assets missing`; }
+  if (!data.models.learned || !data.models.hybrid) $('connection').textContent = `${engineName} · classical ready`;
+}).catch(() => error('The processing engine is unavailable. Reload the page and try again.'));

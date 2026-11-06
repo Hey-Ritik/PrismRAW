@@ -35,7 +35,7 @@ $env:TORCH_HOME = Join-Path (Get-Location) '.cache/torch'
 isp check
 ```
 
-Final weights and small demo assets are Git-ignored and supplied in `outputs/prismraw-release.zip`; extract its checkpoints and demo folder to a fresh checkout, or reproduce training below. LPIPS downloads a roughly 5 MB pretrained SqueezeNet backbone on first setup if uncached. The local serving process needs no cloud inference.
+The three final model checkpoints and small attributed demo crops are included in Git so Docker/Render can build directly from a fresh checkout. Full training data, intermediate checkpoints and generated outputs remain Git-ignored. The release ZIP also includes these deployment assets. LPIPS downloads a roughly 5 MB pretrained SqueezeNet backbone on first setup if uncached. The local serving process needs no cloud inference.
 
 ## Reproduce data and training
 
@@ -88,13 +88,26 @@ scripts/             data preparation, checks, report generation, packaging and 
 reports/             measured JSON and ordered submission report
 docs/                architecture, design, deployment and demo guide
 tests/               pipeline, numerical and API regression tests
-checkpoints/         local trained weights (Git-ignored)
-data/                local raw, prepared and demo data (Git-ignored)
+checkpoints/         three final deployable weights tracked; other weights ignored
+data/                small demo assets tracked; raw/training data ignored
 outputs/             app downloads, browser evidence and release ZIP (Git-ignored)
 ```
 
 ## Delivery and remaining submission actions
 
-Docker packaging is supplied; see `docs/deployment.md`. The current verification is local, not a claimed public deployment or smartphone benchmark. Docker build has not been verified in this environment. A public host needs adequate resources and updated upload/privacy wording. See `THIRD_PARTY_NOTICES.md` for data and model attribution.
+Docker packaging is supplied; see `docs/deployment.md`. The current verification is local, not a claimed public deployment or smartphone benchmark. Docker build has not been verified in this environment. A public host needs adequate resources; the hosted profile displays server-processing privacy wording. See `THIRD_PARTY_NOTICES.md` for data and model attribution.
 
 Team **T47**: **1RUA24CSE0371, 1RUA24CSE0365**. Identity is saved in `configs/team.json` and used by the report generator. The submission report is `eval_P2_T47.md`, with comma-separated USNs on its first line. A public hosted URL and actual team demo/viva remain submission actions. Historical pilot reports retain earlier results; the final report supersedes their current-quality conclusions.
+
+
+## Deploy on Render Free
+
+[Deploy PrismRAW on Render](https://render.com/deploy?repo=https://github.com/Hey-Ritik/PrismRAW)
+
+The committed `render.yaml` selects a Docker web service on the Free plan with health check `/api/health`. It sets `PORT=7860`, `PRISMRAW_HOSTED=1`, `PRISMRAW_MAX_CROP=256` and `PRISMRAW_TORCH_THREADS=1`. No API keys or database credentials are required. Sign in to Render, connect the repository if requested, review the Free service, and deploy. Future updates use Manual Deploy because auto-deploy is deliberately off for this quick-deploy Blueprint.
+
+The hosted profile processes 256x256 central crops rather than the local default 512x512. DNG calibration crops before allocating float/per-pixel calibration buffers. References are cropped to the same sensor region; no geometric registration or image resampling is invented. The UI distinguishes local from hosted processing. This reduces memory pressure but does not guarantee that every upload fits the free instance or that local timings match Render's limited CPU.
+
+Run `python scripts/check_deployment.py` to check required files/configuration, and `python scripts/check_render_profile.py` for a localhost-only hosted-profile integration check. The latter creates and stops its own temporary server. Docker is unavailable in the development environment, so the actual Linux image build and hosted resource fit must be verified from Render logs. No public Render service has been created merely by committing this configuration.
+
+See `docs/deployment.md` for the complete settings and troubleshooting guide. Free services sleep after inactivity, and generated files are ephemeral. A keep-alive request does not fix memory limits or guarantee uptime.

@@ -1,0 +1,36 @@
+{
+  "normalized": true,
+  "bayer_pattern": "BGGR",
+  "white_balance": [
+    1.5119047619047619,
+    1.0,
+    2.309090909090909
+  ],
+  "camera_to_linear_srgb": [
+    [
+      1.3417879590443726,
+      -0.4330877829760778,
+      0.2960841239317053
+    ],
+    [
+      -0.16467623691352665,
+      1.029651738142569,
+      0.08332529877095772
+    ],
+    [
+      -0.014412328565115422,
+      -0.31657453157641785,
+      1.2398295601415332
+    ]
+  ],
+  "scene_id": "004",
+  "dataset": "SIDD-CC",
+  "revision": "5eb2ab6375d7f99f36b59bb5aacb46af18409412",
+  "crop_yxhw": [
+    1326,
+    1832,
+    384,
+    384
+  ],
+  "target": "Matching clean RAW; rendered reference, not captured RGB"
+}

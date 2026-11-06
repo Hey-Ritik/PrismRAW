@@ -9,12 +9,12 @@
 <header class="topbar">
   <a class="brand" href="/" aria-label="PrismRAW home"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 34 31H2Z"/><path d="m18 3 6 28M2 31l19-14"/></svg><span>Prism<b>RAW</b></span></a>
   <nav aria-label="Studio navigation"><a class="nav-active" href="#studio">Studio</a><a href="#benchmark">Evaluation</a></nav>
-  <div class="connection"><span class="status-dot"></span><span id="connection">Connecting to local engine</span><span class="team-tag">T47</span></div>
+  <div class="connection"><span class="status-dot"></span><span id="connection">Connecting to processing engine</span><span class="team-tag">T47</span></div>
 </header>
 <main>
   <section class="intro">
     <div><p class="eyebrow"><span></span> COMPUTATIONAL PHOTOGRAPHY, MADE VISIBLE</p><h1>Start with RAW.<br><span>See the difference.</span></h1><p class="lede">One capture. Three ways to develop it. Explore the details with classical processing and learned reconstruction.</p></div>
-    <div class="intro-aside"><div class="intro-icons"><span>R</span><span>G</span><span>G</span><span>B</span><i>↗</i></div><p>From sensor measurements<br>to a picture you can inspect.</p><span class="privacy"><span class="status-dot"></span> Processing stays on this machine</span></div>
+    <div class="intro-aside"><div class="intro-icons"><span>R</span><span>G</span><span>G</span><span>B</span><i>↗</i></div><p>From sensor measurements<br>to a picture you can inspect.</p><span class="privacy"><span class="status-dot"></span><span id="privacy-message">Uploads processed by PrismRAW</span></span></div>
   </section>
 
   <div id="studio" class="studio-layout">
@@ -36,9 +36,9 @@
         <details class="advanced"><summary>Reference & array options <span>+</span></summary><label class="field-label" for="reference-file">MATCHING REFERENCE <span>Optional · enables quality scores</span></label><input id="reference-file" name="reference" type="file" accept=".npy,.npz,.mat,.png,.jpg,.jpeg"><label class="field-label" for="array-key">MAT / NPZ VARIABLE</label><input id="array-key" name="key" value="data" maxlength="100"><p class="hint">References must already be aligned. Array metadata describes the Bayer pattern, normalization, white balance and colour matrix.</p></details>
         <button class="primary" type="submit"><span>Develop my RAW</span><span aria-hidden="true">↗</span></button>
       </form>
-      <div class="input-settings"><label class="toggle"><input id="adaptive" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>Adapt to the scene</strong><small>Adjust for noise and lighting</small></span></label><details class="advanced"><summary>Advanced processing <span>+</span></summary><label class="toggle"><input id="fp16" type="checkbox"><span class="switch" aria-hidden="true"></span><span><strong>Include FP16 comparison</strong><small>Smaller model, slower on this CPU</small></span></label><p class="hint">We process a central crop up to 512 × 512, preserving sensor orientation and Bayer phase.</p></details></div>
+      <div class="input-settings"><label class="toggle"><input id="adaptive" type="checkbox" checked><span class="switch" aria-hidden="true"></span><span><strong>Adapt to the scene</strong><small>Adjust for noise and lighting</small></span></label><details class="advanced"><summary>Advanced processing <span>+</span></summary><label class="toggle"><input id="fp16" type="checkbox"><span class="switch" aria-hidden="true"></span><span><strong>Include FP16 comparison</strong><small>Smaller model, slower on this CPU</small></span></label><p class="hint" id="crop-note">We process a bounded central crop, preserving sensor orientation and Bayer phase.</p></details></div>
       <div class="getting-started"><span class="mini-label">FIRST TIME HERE?</span><p>Choose a scene, press <b>Develop</b>, then drag the comparison slider to inspect the result.</p></div>
-      <div class="input-footnote"><span class="lock-icon" aria-hidden="true">◇</span><p>No cloud inference.<br>Generated results expire after one hour.</p></div>
+      <div class="input-footnote"><span class="lock-icon" aria-hidden="true">◇</span><p>Uploads removed after processing.<br>Results are temporary; download to keep.</p></div>
     </aside>
 
     <section class="workspace" aria-labelledby="workspace-title">
@@ -54,7 +54,7 @@
         </div>
         <div class="result-meta"><span id="dimensions"></span><span id="duration"></span></div>
         <div id="output-grid" class="output-grid" role="group" aria-label="Select a reconstruction"></div>
-        <div class="quick-metrics"><div><span>RECONSTRUCTION FIDELITY</span><strong id="quick-psnr">—</strong><small>PSNR · higher is closer to reference</small></div><div><span>COLOUR DIFFERENCE</span><strong id="quick-color">—</strong><small>Delta E 00 · lower is closer</small></div><div><span>PROCESSING TIME</span><strong id="quick-time">—</strong><small>Selected pipeline · local CPU</small></div></div>
+        <div class="quick-metrics"><div><span>RECONSTRUCTION FIDELITY</span><strong id="quick-psnr">—</strong><small>PSNR · higher is closer to reference</small></div><div><span>COLOUR DIFFERENCE</span><strong id="quick-color">—</strong><small>Delta E 00 · lower is closer</small></div><div><span>PROCESSING TIME</span><strong id="quick-time">—</strong><small id="compute-note">Selected pipeline · CPU</small></div></div>
         <details class="measurement-panel panel"><summary><span>All pipeline measurements</span><span class="detail-right">Compare the numbers <b>+</b></span></summary><p id="reference-kind" class="hint"></p><div class="table-scroll"><table><thead><tr><th>Pipeline</th><th title="Reconstruction fidelity; higher is better">PSNR ↑</th><th title="Structural similarity; higher is better">SSIM ↑</th><th title="Colour error; lower is better">ΔE00 ↓</th><th title="Perceptual distance; lower is better">LPIPS ↓</th><th>Time</th></tr></thead><tbody id="metrics"></tbody></table></div><p class="hint">CPU timings are single runs, excluding model loading and file I/O. Reference scores apply to the supplied rendering, not universal camera accuracy.</p></details>
         <details class="stages panel"><summary><span>Inside the pipeline</span><span class="detail-right">See the intermediate stages <b>+</b></span></summary><div id="stage-grid" class="stage-grid"></div><div id="settings" class="settings"></div></details>
       </div>

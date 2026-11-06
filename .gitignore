@@ -6,10 +6,15 @@ __pycache__/
 .env
 data/raw/*
 data/processed/*
+!data/processed/demo/
+!data/processed/demo/**
 data/splits/*.csv
 !data/**/.gitkeep
 checkpoints/*
 !checkpoints/.gitkeep
+!checkpoints/final-hybrid.pt
+!checkpoints/final-learned.pt
+!checkpoints/final-hybrid-fp16.pt
 runs/
 work/
 .cache/

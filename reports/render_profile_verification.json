@@ -1,0 +1,12 @@
+{
+  "checks": {
+    "environment_port": "passed",
+    "hosted_health": "passed",
+    "sample_256px": "passed",
+    "array_reference_crop": "passed",
+    "real_dng_bounded_decode": "passed"
+  },
+  "peak_process_tree_rss_mib": 473.99609375,
+  "sample_total_ms": 1468.0877999999211,
+  "scope": "Local Windows hosted-profile smoke test; not a Linux Docker build or a Render free-instance memory/speed guarantee"
+}
