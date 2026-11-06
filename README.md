@@ -4,7 +4,7 @@ Hybrid smartphone RAW-to-RGB reconstruction combining classical image processing
 
 ## Current status
 
-Classical array-based RAW-to-RGB inference is implemented: explicit normalization, Bayer white balance, bilinear demosaicing, colour correction, bilateral denoising, adaptive exposure/tone mapping, sRGB encoding, and sharpening. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. A compact RGB residual network is defined but untrained. Training, reference-quality evaluation, optimized export, and hosted UI are pending.
+Classical array-based RAW-to-RGB inference is implemented: explicit normalization, Bayer white balance, bilinear demosaicing, colour correction, bilateral denoising, adaptive exposure/tone mapping, sRGB encoding, and sharpening. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. A compact conditioned residual network has completed a three-epoch CPU pilot with scene-separated data. Checkpoint-based hybrid inference and a limited PSNR check work. The pilot hybrid underperforms the classical baseline. Full training, learned-only baseline, complete evaluation, optimized export, and hosted UI are pending.
 
 ## Setup (PowerShell)
 
@@ -67,7 +67,7 @@ Metadata JSON must explicitly provide `normalized`, `bayer_pattern`, `white_bala
 
 ## Dataset acquisition
 
-`python scripts/download_sidd_subset.py` downloads one noisy/clean RAW pair and metadata from the [SIDD-CC research derivative](https://huggingface.co/datasets/MhdMohammadi/SIDD-CC), with source URLs and SHA-256 hashes in the ignored dataset folder. This is not the original SIDD Small release and is insufficient for training or evaluation claims. The original download endpoint timed out during setup.
+`python scripts/download_sidd_subset.py --scenes 3` downloads one noisy/clean RAW pair per physical scene from a pinned revision of the [SIDD-CC research derivative](https://huggingface.co/datasets/MhdMohammadi/SIDD-CC), with source URLs, size checks, LFS checksums where provided, and SHA-256 provenance in the ignored dataset folder. It reuses existing verified files. Use `--scenes 5` through `--scenes 10` to expand later. This is not the original SIDD Small release. The original download endpoint timed out during setup.
 
 The clean sample used for initial ISP validation comes from the [SIDD authors' reference repository](https://github.com/AbdoKamel/simple-camera-pipeline/tree/master/data). `scripts/prepare_sidd_reference.py` prepares that sample if the two reference MAT files are present. Its single-illuminant colour transform is approximate, preserves sensor orientation, and is not an exact reproduction of SIDD's sRGB rendering.
 
@@ -79,7 +79,34 @@ python scripts/prepare_sidd_subset.py
 python -m smartphone_isp.cli classical --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --output outputs/sidd-cc-classical
 ```
 
-The prepared subset contains noisy/clean **RAW** crops, not an independently calibrated RGB reference. Its manifest is explicitly marked `development`. Scene expansion, registration checks, and target-rendering validation are required before evaluation or training.
+The legacy single-pair preparation command above remains a development-only example. For the scene-separated pilot, follow the commands below. No independently captured RGB reference is supplied here; targets are fixed renders of clean RAW. Independent registration and colour calibration remain pending.
+
+## Prepare, train, and inspect the CPU pilot
+
+Install the `raw` and `train` optional dependencies first. Run from the repository root:
+
+```powershell
+$env:PYTHONPATH = 'src'
+python scripts/download_sidd_subset.py --scenes 3
+python scripts/prepare_training_data.py
+python -m smartphone_isp.training.train --config configs/pilot.yaml
+python -m smartphone_isp.evaluation.pilot
+python -m unittest discover -s tests -v
+```
+
+The default prepares 24 deterministic 128x128 patches: eight from each of three physical scenes. Assignments are saved before extraction; patches from one scene cannot enter multiple splits. The pilot has one training scene, one validation scene, and one held-out test scene. Crops have even Bayer offsets and use a four-pixel processing border, removed before training. No augmentation is currently applied.
+
+Inputs and targets use the same approximate camera transform in linear RGB. Display exposure is selected using the noisy input and reused for the target. Training uses L1 plus gradient consistency; the checkpoint is selected by validation linear-RGB L1 among trained epochs. The test split is not loaded during training. A manifest checksum guards evaluation against mismatched training data.
+
+Artifacts: `checkpoints/pilot-best.pt`, `runs/pilot/training.json`, `outputs/pilot-evaluation/evaluation.json`, and comparison PNGs ordered **classical | hybrid | clean-RAW render**. The comparison targets and tiny scene count cannot establish real-world colour accuracy. See `reports/pilot_summary.md` for the observed underperformance.
+
+Run hybrid inference using the locally trained checkpoint:
+
+```powershell
+python -m smartphone_isp.cli hybrid --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --checkpoint checkpoints/pilot-best.pt --output outputs/hybrid-pilot
+```
+
+Hybrid inference still computes a redundant classical bilateral result during preparation; its current latency is not an optimized model benchmark. Model weights, data, and generated results are kept out of Git.
 
 ## Reproducibility
 

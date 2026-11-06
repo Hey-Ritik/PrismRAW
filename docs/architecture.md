@@ -1,6 +1,6 @@
 # Architecture
 
-The classical array-input path is implemented. Learned and hybrid integration, direct DNG decoding, and trained model weights remain pending. The refinement network is defined but untrained.
+The classical array-input path, paired pilot training, and checkpoint-based hybrid inference are implemented. Direct DNG decoding, learned-only reconstruction, and deployment optimization remain pending. Locally generated pilot weights are Git-ignored; the pilot has not established a quality improvement.
 
 ```mermaid
 flowchart TD

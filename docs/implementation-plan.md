@@ -4,7 +4,7 @@
 - [x] Download one SIDD-CC noisy/clean RAW development pair with metadata and provenance.
 - [x] Inspect RAW pair dimensions, values, and metadata; RGB target validation remains pending.
 - [ ] Verify CFA, normalization state, colour matrices and registration.
-- [ ] Save scene-level train/validation/test manifests before extracting patches.
+- [x] Save a deterministic pilot scene split plan before patch extraction, then save patch manifest.
 
 ## 2. Classical ISP
 - [ ] Implement MAT/DNG adapters without hidden full-ISP preprocessing.
@@ -16,8 +16,8 @@
 ## 3. Learning
 - [ ] Implement paired patch dataset and CFA-safe augmentation.
 - [ ] Implement compact packed-Bayer-to-RGB baseline.
-- [ ] Train residual hybrid model using explicit linear-RGB inputs.
-- [ ] Add noise/illumination conditioning and checkpoint/config tracking.
+- [x] Run three-epoch CPU pilot training with explicit linear-RGB input/target pairs; larger training pending.
+- [x] Add noise/illumination conditioning and checkpoint/config tracking.
 
 ## 4. Evidence
 - [ ] Evaluate classical, learned-only, hybrid on identical held-out scenes.

@@ -1,4 +1,4 @@
-"""Compact RGB refinement model for the hybrid ISP (untrained by default)."""
+"""Compact RGB refinement model; load an explicit trained checkpoint for inference."""
 
 import torch
 from torch import nn

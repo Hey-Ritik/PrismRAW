@@ -11,14 +11,17 @@ def main():
     parser = argparse.ArgumentParser(description="Smartphone ISP project utilities")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check")
-    classical = commands.add_parser("classical", help="Process a Bayer array with JSON metadata")
-    classical.add_argument("--input", required=True, type=Path)
-    classical.add_argument("--metadata", required=True, type=Path)
-    classical.add_argument("--output", required=True, type=Path)
-    classical.add_argument("--key", help="Array variable in MAT/NPZ")
-    classical.add_argument("--fixed", action="store_true", help="Disable adaptive parameter selection")
+    for mode in ("classical", "hybrid"):
+        command = commands.add_parser(mode, help=f"Process a Bayer array using the {mode} ISP")
+        command.add_argument("--input", required=True, type=Path)
+        command.add_argument("--metadata", required=True, type=Path)
+        command.add_argument("--output", required=True, type=Path)
+        command.add_argument("--key", help="Array variable in MAT/NPZ")
+        command.add_argument("--fixed", action="store_true", help="Disable adaptive parameter selection")
+        if mode == "hybrid":
+            command.add_argument("--checkpoint", required=True, type=Path)
     args = parser.parse_args()
-    if args.command == "classical":
+    if args.command in ("classical", "hybrid"):
         try:
             run_classical(args)
         except (ValueError, KeyError, OSError, ImportError) as exc:
@@ -28,7 +31,7 @@ def main():
     for name in ("numpy", "cv2", "rawpy", "scipy", "torch", "gradio", "skimage", "lpips"):
         status = "available" if importlib.util.find_spec(name) else "not installed"
         print(f"{name}: {status}")
-    print("Status: classical array ISP available; real-data validation and learned inference pending.")
+    print("Status: classical and checkpoint-based hybrid array ISP available; full evaluation pending.")
 
 
 def run_classical(args):
@@ -39,7 +42,16 @@ def run_classical(args):
 
     raw = load_raw(args.input, args.key)
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
-    output, stages, stats = process(raw, metadata, adaptive=not args.fixed)
+    if args.command == "hybrid":
+        import torch
+        from smartphone_isp.pipelines.hybrid import load_model, process_hybrid
+        torch.set_num_threads(2)
+        model, checkpoint = load_model(args.checkpoint)
+        output, stages, stats = process_hybrid(raw, metadata, model, adaptive=not args.fixed)
+        stats["checkpoint"] = str(args.checkpoint)
+        stats["trained_epoch"] = checkpoint["epoch"]
+    else:
+        output, stages, stats = process(raw, metadata, adaptive=not args.fixed)
     args.output.mkdir(parents=True, exist_ok=True)
     Image.fromarray(np.rint(output * 255).astype(np.uint8)).save(args.output / "output.png")
     np.savez_compressed(args.output / "intermediates.npz", **stages)
@@ -47,7 +59,7 @@ def run_classical(args):
     stats["metadata"] = metadata
     stats["input_description"] = "Unverified sensor array unless dataset provenance is documented"
     (args.output / "processing.json").write_text(json.dumps(stats, indent=2), encoding="utf-8")
-    print(f"Saved classical output and intermediates to {args.output}")
+    print(f"Saved {args.command} output and intermediates to {args.output}")
     print(f"Processing: {stats['processing_ms']:.1f} ms (excludes file I/O)")
 
 

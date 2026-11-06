@@ -1,0 +1,11 @@
+# CPU pipeline validation only; not a full training recipe.
+manifest: data/processed/pilot/manifest.json
+output: runs/pilot
+checkpoint: checkpoints/pilot-best.pt
+seed: 42
+epochs: 3
+batch_size: 2
+learning_rate: 0.0002
+base_channels: 16
+threads: 2
+device: cpu

@@ -10,10 +10,10 @@ Validated sensor data plus explicit normalization state and camera metadata. See
 Classical camera stages with a compact conditioned RGB residual network. Maintain a separate packed-Bayer learned baseline.
 
 ## Dataset and splits
-Initial real-data validation uses a clean RAW and metadata from the SIDD authors' reference repository. The original download server timed out; the subset downloader retrieves one pair from the SIDD-CC research derivative for loader development. Verify rendering and metadata compatibility before training. A one-pair subset is not a training/evaluation split.
+Initial real-data validation uses a clean RAW and metadata from the SIDD authors' reference repository. A pinned SIDD-CC pilot now includes one capture from each of three physical scenes. Seeded scene-level assignments precede patch extraction: scene 003 train, 001 validation, 002 test. Eight patches per scene are used. This small split also changes camera between scenes, so it does not isolate scene versus sensor generalization. Independent alignment and colour-rendering validation remain pending.
 
 ## Training
-Patch-based learning with reconstruction, structure, and colour objectives. Hyperparameters in `configs/default.yaml` are starting values, not tuned results. Training loop and learned-only network are pending.
+Implemented pilot: conditioned RGB residual U-Net, linear-RGB L1 plus gradient consistency, Adam, seeded CPU training, and checkpoint selection by validation L1 among trained epochs. `configs/pilot.yaml` is the executed recipe; `configs/default.yaml` is an unexecuted starting proposal. Targets are clean RAW rendered through the same approximate fixed transform as noisy input. No perceptual or explicit colour loss or augmentation is included yet. The three-epoch pilot underperforms classical denoising; its validation L1 also remains worse than the initial identity refinement. Learned-only network and larger training remain pending.
 
 ## Evaluation
 PSNR, SSIM, Delta E, LPIPS; parameters, exported size, latency, peak memory. Record target encoding, metric ranges, hardware, image resolution, warm-up and timing protocol.

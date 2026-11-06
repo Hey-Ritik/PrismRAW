@@ -47,6 +47,15 @@ def bilateral(image, sigma):
     return numerator / denominator
 
 
+def render_linear(linear, exposure=1.0, sharpen=0.0):
+    """Shared display renderer; exposure must come from noisy input, never target."""
+    exposed = np.maximum(linear * exposure, 0)
+    lum = exposed @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    toned = exposed / (1 + lum[..., None])
+    encoded = linear_to_srgb(toned)
+    return np.clip(encoded + sharpen * (encoded - _blur(encoded)), 0, 1), toned, encoded
+
+
 def process(raw, metadata, adaptive=True):
     """Return display RGB, named intermediates, and measured processing statistics.
 
@@ -92,13 +101,8 @@ def process(raw, metadata, adaptive=True):
     sigma = float(np.clip(noise * 2, 0.005, 0.08)) if adaptive else 0.03
     denoised = bilateral(linear, sigma)
     exposure = float(np.clip(0.18 / max(median_luma, 1e-4), 0.5, 3)) if adaptive else 1.0
-    exposed = np.maximum(denoised * exposure, 0)
-    # One luminance-dependent scale for all channels to limit hue shifts.
-    lum = exposed @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
-    toned = exposed / (1 + lum[..., None])
-    encoded = linear_to_srgb(toned)
     sharpen = float(0.15 / (1 + 20 * noise)) if adaptive else 0.15
-    output = np.clip(encoded + sharpen * (encoded - _blur(encoded)), 0, 1)
+    output, toned, encoded = render_linear(denoised, exposure, sharpen)
     stages = {"normalized_mosaic": normalized, "balanced_mosaic": balanced,
               "camera_rgb": camera_rgb, "linear_srgb": linear,
               "denoised_linear": denoised, "tone_mapped_linear": toned,
