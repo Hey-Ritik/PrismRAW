@@ -15,12 +15,13 @@
 
 ## 3. Learning
 - [ ] Implement paired patch dataset and CFA-safe augmentation.
-- [ ] Implement compact packed-Bayer-to-RGB baseline.
+- [x] Implement and run compact packed-Bayer-to-RGB baseline with explicit camera metadata.
 - [x] Run three-epoch CPU pilot training with explicit linear-RGB input/target pairs; larger training pending.
 - [x] Add noise/illumination conditioning and checkpoint/config tracking.
+- [x] Expand to five physical scenes and run both models for 20 CPU epochs, preserving pilot holdouts.
 
 ## 4. Evidence
-- [ ] Evaluate classical, learned-only, hybrid on identical held-out scenes.
+- [x] Run exploratory classical/learned-only/hybrid PSNR comparison on identical pilot patches; full metrics/fresh final holdout pending.
 - [ ] Add metric definitions, colour-space conversions, and alignment checks.
 - [ ] Ablate learned refinement, adaptation, and reduced precision separately.
 - [ ] Record real and synthetic stress tests separately; explain failures.

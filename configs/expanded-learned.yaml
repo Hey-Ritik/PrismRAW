@@ -1,0 +1,11 @@
+manifest: data/processed/expanded/manifest.json
+output: runs/expanded-learned
+checkpoint: checkpoints/expanded-learned.pt
+model_kind: learned
+seed: 42
+epochs: 20
+batch_size: 2
+learning_rate: 0.0002
+base_channels: 16
+threads: 2
+device: cpu

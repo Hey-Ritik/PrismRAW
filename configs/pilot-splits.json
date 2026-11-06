@@ -1,0 +1,9 @@
+{
+  "seed": 42,
+  "scenes": {
+    "001": "validation",
+    "002": "test",
+    "003": "train"
+  },
+  "scope": "Frozen exploratory pilot holdouts, already inspected; not a fresh final benchmark"
+}

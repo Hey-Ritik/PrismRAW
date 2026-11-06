@@ -4,7 +4,7 @@ Hybrid smartphone RAW-to-RGB reconstruction combining classical image processing
 
 ## Current status
 
-Classical array-based RAW-to-RGB inference is implemented: explicit normalization, Bayer white balance, bilinear demosaicing, colour correction, bilateral denoising, adaptive exposure/tone mapping, sRGB encoding, and sharpening. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. A compact conditioned residual network has completed a three-epoch CPU pilot with scene-separated data. Checkpoint-based hybrid inference and a limited PSNR check work. The pilot hybrid underperforms the classical baseline. Full training, learned-only baseline, complete evaluation, optimized export, and hosted UI are pending.
+All three array-input inference paths now execute: classical, learned-only Bayer-to-RGB, and conditioned hybrid refinement. The expanded CPU pilot has five physical scenes and separate training, validation, and test scenes. Classical remains strongest; both learned paths are undertrained and the learned-only pilot shows substantial reconstruction artifacts. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. Larger training, complete evaluation, optimized export, and hosted UI remain pending.
 
 ## Setup (PowerShell)
 
@@ -111,3 +111,28 @@ Hybrid inference still computes a redundant classical bilateral result during pr
 ## Reproducibility
 
 Split by scene before cropping patches. Record dataset versions, split manifests, configuration, random seed, source revision, checkpoint, output colour encoding, and benchmark hardware with every experiment. Never report placeholders as evaluation results.
+
+## Expanded three-way comparison
+
+This extends training with two scenes while preserving the original validation/test scenes and their patch values. Run from the repository root after installing `raw` and `train` extras:
+
+```powershell
+$env:PYTHONPATH = 'src'
+python scripts/download_sidd_subset.py --scenes 5
+python scripts/prepare_training_data.py --output data/processed/expanded --existing-splits configs/pilot-splits.json
+python -m smartphone_isp.training.train --config configs/expanded-hybrid.yaml
+python -m smartphone_isp.training.train --config configs/expanded-learned.yaml
+python -m smartphone_isp.evaluation.pilot --manifest data/processed/expanded/manifest.json --checkpoint checkpoints/expanded-hybrid.pt --learned-checkpoint checkpoints/expanded-learned.pt --output outputs/expanded-comparison
+```
+
+Forty 128x128 patches: 24 training (three scenes), eight validation, eight test. The learned-only network uses normalized packed Bayer plus white-balance gains, colour-matrix values, and CFA phase as metadata inputs. It learns demosaicing/colour reconstruction; no classical colour or denoising stages precede it. Both models predict linear RGB and use the same training objective. A common display transform uses noisy-input exposure and sharpening for all compared outputs. The target uses that exposure without sharpening.
+
+The expanded configs execute 20 CPU epochs with validation-only checkpoint selection. The exploratory test scene was already inspected in the earlier pilot; this is not a new final holdout. Comparison PNG order: **classical | learned-only | hybrid | clean-RAW render**. Results and observed artifacts are documented in `reports/expanded_pilot_summary.md`.
+
+Standalone learned-only inference (fixed post-network display exposure):
+
+```powershell
+python -m smartphone_isp.cli learned --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --checkpoint checkpoints/expanded-learned.pt --exposure 3 --output outputs/learned-expanded
+```
+
+The standalone default exposure is 1; use the evaluator for the shared three-way display settings. No adaptive classical preprocessing is used in the learned-only path.

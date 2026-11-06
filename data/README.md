@@ -13,3 +13,11 @@ Metadata must record CFA pattern, whether black subtraction and normalization ha
 SIDD MAT arrays are already normalized and black-level-subtracted. Verify the actual chosen dataset variant rather than reusing a DNG preprocessing path blindly. Support MAT storage variants explicitly when building the loader.
 
 Group samples by scene before splitting and cropping. Fit preprocessing/calibration only on training data. Never synthesize a Bayer mosaic from a JPEG and call it captured RAW.
+
+## Prepared pilot schema
+
+The training preparation command writes a JSON manifest, not the legacy development CSV. Schema 2 contains scene assignments, dataset revision, index checksum, target-rendering convention, and sample paths relative to the manifest directory. `split-plan.json` is saved before extraction. `--existing-splits` preserves all previous scene assignments and sends added scenes to training; do not reshuffle holdouts after inspecting results.
+
+Each NPZ includes linear noisy input (`source`), linear clean target (`target`), normalized packed Bayer (`packed_raw`), 16 camera features (`calibration`), noise/illumination (`conditions`), and comparison-render inputs/outputs. CFA packing retains semantic R/G/G/B plus explicit pattern phase in calibration. Training currently applies no augmentation. Noise and display exposure come from noisy input; no target-derived exposure is supplied to a model.
+
+Clean targets and classical inputs are demosaiced using a four-pixel RAW border that is then removed. Learned-only inputs currently contain the central RAW patch without that border. The pilot report records this boundary-context limitation; equalize context before final benchmarking. Pair dimensions and finite values are validated, while independent geometric registration remains pending.

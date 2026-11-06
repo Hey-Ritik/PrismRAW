@@ -7,6 +7,7 @@ import numpy as np
 from scipy.io import loadmat
 
 from smartphone_isp.data.splits import assign_scenes, validate_disjoint
+from smartphone_isp.data.bayer import pack_bayer
 from smartphone_isp.pipelines.classical import process, render_linear
 
 
@@ -29,12 +30,17 @@ def camera_metadata(meta):
             "camera_to_linear_srgb": (xyz_to_srgb @ np.linalg.inv(matrix)).tolist()}
 
 
-def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=42):
+def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=42, existing_splits=None):
     if patch_size < 8 or patch_size % 2 or patches_per_scene < 1:
         raise ValueError("Use an even patch size >=8 and a positive patch count")
     index_path, destination = Path(index_path), Path(destination)
     index = json.loads(index_path.read_text(encoding="utf-8"))
     assignments = assign_scenes(index["records"], seed)
+    if existing_splits:
+        previous = json.loads(Path(existing_splits).read_text(encoding="utf-8"))
+        assignments = {scene: previous["scenes"].get(scene, "train") for scene in assignments}
+        if not set(previous["scenes"]).issubset(assignments):
+            raise ValueError("Expanded dataset must retain every previous physical scene")
     destination.mkdir(parents=True, exist_ok=True)
     (destination / "split-plan.json").write_text(json.dumps({"seed": seed, "scenes": assignments}, indent=2), encoding="utf-8")
     rng = np.random.default_rng(seed)
@@ -63,6 +69,10 @@ def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=4
             sample_id = f"{record['instance'][:4]}-{i:03d}"
             path = destination / f"{sample_id}.npz"
             np.savez_compressed(path, source=source, target=target,
+                                packed_raw=pack_bayer(source_stages["normalized_mosaic"][inner], metadata["bayer_pattern"]),
+                                calibration=np.array(metadata["white_balance"] +
+                                    np.asarray(metadata["camera_to_linear_srgb"]).ravel().tolist() +
+                                    [float(metadata["bayer_pattern"] == p) for p in ("RGGB", "BGGR", "GRBG", "GBRG")], dtype=np.float32),
                                 classical=classical[inner], target_srgb=display_target,
                                 conditions=np.array([stats["noise_estimate"], stats["median_linear_luminance"]], dtype=np.float32),
                                 exposure=np.float32(stats["exposure_gain"]), sharpen=np.float32(stats["sharpen_strength"]))
@@ -71,7 +81,7 @@ def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=4
                          "path": path.name, "crop_yxhw": [y+4, x+4, patch_size, patch_size]})
         print(f"Prepared {record['instance']}: {assignments[record['scene_id']]} ({patches_per_scene} patches)", flush=True)
     validate_disjoint(rows)
-    manifest = {"schema": 1, "dataset": index["dataset"], "revision": index["revision"],
+    manifest = {"schema": 2, "dataset": index["dataset"], "revision": index["revision"],
                 "index_sha256": hashlib.sha256(index_path.read_bytes()).hexdigest(),
                 "seed": seed, "patch_size": patch_size, "scene_assignments": assignments,
                 "target": "Clean RAW rendered through fixed approximate camera transform; not captured RGB ground truth",

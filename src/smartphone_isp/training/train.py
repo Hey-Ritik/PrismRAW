@@ -15,6 +15,7 @@ import yaml
 
 from smartphone_isp.data.paired import PairedDataset
 from smartphone_isp.models.residual_unet import ResidualUNet
+from smartphone_isp.models.raw_to_rgb import RawToRGBNet
 
 
 def objective(prediction, target):
@@ -48,12 +49,14 @@ def train(config):
     torch.set_num_threads(int(config["threads"]))
     torch.use_deterministic_algorithms(True)
     device = torch.device(config["device"])
-    train_data = PairedDataset(config["manifest"], "train")
-    val_data = PairedDataset(config["manifest"], "validation")
+    kind = config.get("model_kind", "hybrid")
+    train_data = PairedDataset(config["manifest"], "train", kind)
+    val_data = PairedDataset(config["manifest"], "validation", kind)
     train_loader = DataLoader(train_data, batch_size=config["batch_size"], shuffle=True,
                               generator=torch.Generator().manual_seed(seed), num_workers=0)
     val_loader = DataLoader(val_data, batch_size=config["batch_size"], num_workers=0)
-    model = ResidualUNet(config["base_channels"]).to(device)
+    model_type = RawToRGBNet if kind == "learned" else ResidualUNet
+    model = model_type(config["base_channels"]).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
     output = Path(config["output"])
     output.mkdir(parents=True, exist_ok=True)
@@ -90,7 +93,8 @@ def train(config):
             best = val
             report["best_epoch"] = epoch
             temporary = checkpoint_path.with_suffix(".tmp")
-            torch.save({"format": "prismraw-residual-v1", "base_channels": config["base_channels"],
+            checkpoint_format = "prismraw-bayer-v1" if kind == "learned" else "prismraw-residual-v1"
+            torch.save({"format": checkpoint_format, "base_channels": config["base_channels"],
                         "state_dict": model.state_dict(), "epoch": epoch, "validation_l1": val,
                         "manifest_sha256": manifest_hash, "config": config,
                         "target": "Approximate fixed rendering of clean SIDD-CC RAW"}, temporary)

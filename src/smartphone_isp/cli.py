@@ -1,4 +1,4 @@
-"""Command-line environment checks and explicit-metadata classical inference."""
+"""Command-line environment checks and explicit-metadata ISP inference."""
 
 import argparse
 import importlib.util
@@ -11,19 +11,22 @@ def main():
     parser = argparse.ArgumentParser(description="Smartphone ISP project utilities")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check")
-    for mode in ("classical", "hybrid"):
+    for mode in ("classical", "hybrid", "learned"):
         command = commands.add_parser(mode, help=f"Process a Bayer array using the {mode} ISP")
         command.add_argument("--input", required=True, type=Path)
         command.add_argument("--metadata", required=True, type=Path)
         command.add_argument("--output", required=True, type=Path)
         command.add_argument("--key", help="Array variable in MAT/NPZ")
-        command.add_argument("--fixed", action="store_true", help="Disable adaptive parameter selection")
-        if mode == "hybrid":
+        if mode != "learned":
+            command.add_argument("--fixed", action="store_true", help="Disable adaptive parameter selection")
+        if mode in ("hybrid", "learned"):
             command.add_argument("--checkpoint", required=True, type=Path)
+        if mode == "learned":
+            command.add_argument("--exposure", type=float, default=1.0, help="Fixed display exposure after learned RAW reconstruction")
     args = parser.parse_args()
-    if args.command in ("classical", "hybrid"):
+    if args.command in ("classical", "hybrid", "learned"):
         try:
-            run_classical(args)
+            run_inference(args)
         except (ValueError, KeyError, OSError, ImportError) as exc:
             parser.error(str(exc))
         return
@@ -31,10 +34,10 @@ def main():
     for name in ("numpy", "cv2", "rawpy", "scipy", "torch", "gradio", "skimage", "lpips"):
         status = "available" if importlib.util.find_spec(name) else "not installed"
         print(f"{name}: {status}")
-    print("Status: classical and checkpoint-based hybrid array ISP available; full evaluation pending.")
+    print("Status: classical, learned, and hybrid array ISP available; full evaluation pending.")
 
 
-def run_classical(args):
+def run_inference(args):
     import numpy as np
     from PIL import Image
     from smartphone_isp.data.arrays import load_raw
@@ -42,7 +45,14 @@ def run_classical(args):
 
     raw = load_raw(args.input, args.key)
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
-    if args.command == "hybrid":
+    if args.command == "learned":
+        import torch
+        from smartphone_isp.pipelines.learned import load_model, process_learned
+        torch.set_num_threads(2)
+        model, checkpoint = load_model(args.checkpoint)
+        output, stages, stats = process_learned(raw, metadata, model, args.exposure)
+        stats.update(checkpoint=str(args.checkpoint), trained_epoch=checkpoint["epoch"])
+    elif args.command == "hybrid":
         import torch
         from smartphone_isp.pipelines.hybrid import load_model, process_hybrid
         torch.set_num_threads(2)
