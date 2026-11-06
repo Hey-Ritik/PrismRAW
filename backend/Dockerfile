@@ -1,12 +1,11 @@
 FROM python:3.11-slim
 WORKDIR /app
 ENV PYTHONPATH=/app/src TORCH_HOME=/app/.cache/torch PYTHONUNBUFFERED=1
-ENV PORT=7860 PRISMRAW_HOSTED=1
+ENV PORT=7860 PRISMRAW_HOSTED=1 PRISMRAW_API_ONLY=1
 RUN pip install --no-cache-dir torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cpu
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md THIRD_PARTY_NOTICES.md ./
 COPY src ./src
 RUN pip install --no-cache-dir '.[raw,eval,app]'
-COPY app ./app
 COPY scripts/serve.py ./scripts/serve.py
 COPY reports ./reports
 COPY checkpoints/final-hybrid.pt checkpoints/final-learned.pt checkpoints/final-hybrid-fp16.pt ./checkpoints/

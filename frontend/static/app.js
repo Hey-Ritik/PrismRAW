@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id);
+const apiUrl = path => new URL(path, window.PRISMRAW_API_BASE || window.location.origin).href;
 const labels = {classical: 'Classical', learned: 'Learned', hybrid: 'Hybrid', optimized: 'Hybrid · FP16', reference: 'Reference'};
 const descriptions = {classical: 'Traditional processing', learned: 'Neural reconstruction', hybrid: 'Classical + learned', optimized: 'Reduced precision', reference: 'Clean target render'};
 const sceneInfo = {'001': ['Samsung S6', 'Low light'], '003': ['Nexus 6', 'Normal light'], '004': ['Google Pixel', 'Indoor scene'], '005': ['iPhone 7', 'Low light']};
@@ -95,6 +96,10 @@ function imageCard(key, url) {
 }
 
 function render(data) {
+  data.images = Object.fromEntries(Object.entries(data.images).map(([key, url]) => [key, apiUrl(url)]));
+  data.intermediates = Object.fromEntries(Object.entries(data.intermediates).map(([key, url]) => [key, apiUrl(url)]));
+  data.download = apiUrl(data.download);
+  data.report = apiUrl(data.report);
   currentData = data;
   $('empty').hidden = true; $('results').hidden = false;
   $('output-grid').replaceChildren(); $('viewer-tabs').replaceChildren();
@@ -139,7 +144,7 @@ function render(data) {
 async function request(url, options) {
   busy(true); error('');
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(apiUrl(url), options);
     const text = await response.text();
     let data;
     try { data = JSON.parse(text); } catch { throw Error('The engine could not complete this request. Please try again or use a smaller RAW capture.'); }
@@ -195,7 +200,7 @@ $('show-evaluation').onclick = async () => {
   const box = $('evaluation');
   if (!box.hidden) { box.hidden = true; $('show-evaluation').setAttribute('aria-expanded', 'false'); return; }
   try {
-    const response = await fetch('/api/evaluation'); if (!response.ok) throw Error(); const data = await response.json(); box.replaceChildren();
+    const response = await fetch(apiUrl('/api/evaluation')); if (!response.ok) throw Error(); const data = await response.json(); box.replaceChildren();
     const note = document.createElement('p');
     if (!data.metrics) { note.textContent = data.status || 'Evaluation unavailable'; box.append(note); }
     else {
@@ -217,7 +222,7 @@ function chooseScene(id) {
   document.querySelectorAll('[data-scene]').forEach(card => card.setAttribute('aria-pressed', String(card.dataset.scene === id)));
 }
 $('scene').onchange = () => chooseScene($('scene').value);
-fetch('/api/health').then(response => { if (!response.ok) throw Error(); return response.json(); }).then(data => {
+fetch(apiUrl('/api/health')).then(response => { if (!response.ok) throw Error(); return response.json(); }).then(data => {
   const engineName = data.hosted ? 'Hosted engine' : 'Local engine';
   $('connection').textContent = `${engineName} · ${data.device}`;
   $('privacy-message').textContent = data.hosted ? 'Uploads processed on hosting server' : 'Processing stays on this machine';

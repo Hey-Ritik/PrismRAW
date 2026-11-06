@@ -1,5 +1,10 @@
 # PrismRAW
 
+Current structure: `frontend/` contains the static website and Vercel configuration; `backend/` contains Python source, scripts, tests, models, configs, reports and datasets. Set **Vercel Root Directory to frontend**. Render uses the repository-root Blueprint with Docker context `./backend` and Dockerfile `./backend/Dockerfile`. Run Python/training/evaluation commands below from **backend/**. The root `run_local.ps1` still launches both locally. Generated release ZIPs remain under root `outputs/`.
+
+
+For **Vercel frontend + Render backend**, follow [the split deployment guide](docs/split-deployment.md). The static Vercel build uses `PUBLIC_API_BASE_URL`; Render uses `PRISMRAW_API_ONLY=1` and the exact `PRISMRAW_FRONTEND_ORIGINS` allowlist. Local serving still works without these overrides.
+
 An efficient hybrid smartphone ISP for Computer Vision Hackathon P2. Converts Bayer sensor data into RGB with classical, learned-only, hybrid, and reduced-precision hybrid paths.
 
 ## Run locally
@@ -81,16 +86,26 @@ References are optional matching clean RAW arrays or aligned RGB PNG/JPEG. No qu
 ## Layout
 
 ```text
-src/smartphone_isp/   classical, data, models, pipelines, training, evaluation, optimization, app
-app/static/          responsive local camera-lab interface
-configs/             executed recipes and frozen scene policies
-scripts/             data preparation, checks, report generation, packaging and serving
-reports/             measured JSON and ordered submission report
-docs/                architecture, design, deployment and demo guide
-tests/               pipeline, numerical and API regression tests
-checkpoints/         three final deployable weights tracked; other weights ignored
-data/                small demo assets tracked; raw/training data ignored
-outputs/             app downloads, browser evidence and release ZIP (Git-ignored)
+frontend/
+  index.html           camera studio
+  static/              CSS, JavaScript, thumbnails and local API configuration
+  build.mjs            static build with the Render API origin
+  vercel.json          Vercel deployment settings
+backend/
+  src/smartphone_isp/   ISP pipelines, models, training, evaluation and FastAPI
+  scripts/             serving, data preparation, checks and release packaging
+  tests/               pipeline, numerical, API and CORS regression tests
+  configs/             training recipes and scene policies
+  checkpoints/         final deployment weights; intermediate weights ignored
+  data/                demo crops tracked; training data ignored
+  reports/             measured results and submission report
+  Dockerfile           Render backend image
+  pyproject.toml       Python dependencies
+  outputs/             new API downloads (ignored)
+docs/                  architecture, deployment and demo guides
+render.yaml            Render Blueprint using backend Docker context
+run_local.ps1          local combined launcher
+outputs/               release ZIP and earlier local artifacts (ignored)
 ```
 
 ## Delivery and remaining submission actions
@@ -107,6 +122,8 @@ Team **T47**: **1RUA24CSE0371, 1RUA24CSE0365**. Identity is saved in `configs/te
 The committed `render.yaml` selects a Docker web service on the Free plan with health check `/api/health`. It sets `PORT=7860`, `PRISMRAW_HOSTED=1`, `PRISMRAW_MAX_CROP=256` and `PRISMRAW_TORCH_THREADS=1`. No API keys or database credentials are required. Sign in to Render, connect the repository if requested, review the Free service, and deploy. Future updates use Manual Deploy because auto-deploy is deliberately off for this quick-deploy Blueprint.
 
 The hosted profile processes 256x256 central crops rather than the local default 512x512. DNG calibration crops before allocating float/per-pixel calibration buffers. References are cropped to the same sensor region; no geometric registration or image resampling is invented. The UI distinguishes local from hosted processing. This reduces memory pressure but does not guarantee that every upload fits the free instance or that local timings match Render's limited CPU.
+
+FP16 loads only when selected and is released after inference. The app saves intermediate previews early and scores/saves one reconstruction at a time to shorten array lifetimes. Live LPIPS scoring remains enabled, with unchanged crops and model weights. A four-method 64px regression check reproduced all images and metrics exactly. The measured 256px sample/array/DNG peak changed only slightly (494.1 to 492.2 MiB on Windows); no substantial RAM saving or Render memory guarantee is claimed. Details are in `reports/memory_optimization.json`.
 
 Run `python scripts/check_deployment.py` to check required files/configuration, and `python scripts/check_render_profile.py` for a localhost-only hosted-profile integration check. The latter creates and stops its own temporary server. Docker is unavailable in the development environment, so the actual Linux image build and hosted resource fit must be verified from Render logs. No public Render service has been created merely by committing this configuration.
 

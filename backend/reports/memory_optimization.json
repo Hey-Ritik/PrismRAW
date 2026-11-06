@@ -1,0 +1,40 @@
+{
+  "changes": [
+    "FP16 loads only when requested and is not cached",
+    "Save previews before neural inference; release stage arrays early",
+    "Score and save one reconstruction at a time; release intermediate arrays before scoring"
+  ],
+  "lpips_enabled": true,
+  "image_size_changed": false,
+  "baseline_commit": "81dcd27",
+  "before": {
+    "checks": {
+      "environment_port": "passed",
+      "hosted_health": "passed",
+      "sample_256px": "passed",
+      "array_reference_crop": "passed",
+      "real_dng_bounded_decode": "passed"
+    },
+    "peak_process_tree_rss_mib": 494.0703125,
+    "sample_total_ms": 1520.4497000013362,
+    "scope": "Local Windows hosted-profile smoke test; not a Linux Docker build or a Render free-instance memory/speed guarantee"
+  },
+  "after": {
+    "checks": {
+      "environment_port": "passed",
+      "hosted_health": "passed",
+      "sample_256px": "passed",
+      "array_reference_crop": "passed",
+      "real_dng_bounded_decode": "passed"
+    },
+    "peak_process_tree_rss_mib": 492.19140625,
+    "sample_total_ms": 1450.828900000488,
+    "scope": "Local Windows hosted-profile smoke test; not a Linux Docker build or a Render free-instance memory/speed guarantee"
+  },
+  "equivalence_64px_all_four_methods": {
+    "four_method_png_hashes": "identical",
+    "metrics_including_lpips": "identical",
+    "cached_models": 2
+  },
+  "interpretation": "Small sampled RSS difference may be within run-to-run variation. No substantial saving or Render memory guarantee established."
+}

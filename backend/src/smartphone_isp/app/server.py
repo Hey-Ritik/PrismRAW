@@ -20,13 +20,14 @@ from smartphone_isp.app.engine import ROOT, RESULTS, CHECKPOINTS, cached_model, 
 from smartphone_isp.app.settings import runtime_settings
 from smartphone_isp.data.arrays import load_raw
 from smartphone_isp.data.dng import load_dng
+from smartphone_isp.app.cors import add_frontend_cors
 
 def warmup():
     import torch
     from smartphone_isp.evaluation.metrics import perceptual_model
     torch.set_num_threads(runtime_settings().threads)
     for method, enabled in available_models().items():
-        if enabled and method != "classical":
+        if enabled and method in {"learned", "hybrid"}:
             cached_model(method, CHECKPOINTS[method].stat().st_mtime_ns)
     perceptual_model()
 
@@ -38,15 +39,21 @@ async def lifespan(application):
 
 
 app = FastAPI(title="PrismRAW", docs_url="/api/docs", lifespan=lifespan)
+add_frontend_cors(app)
+FRONTEND = ROOT.parent / "frontend"
+API_ONLY = os.environ.get("PRISMRAW_API_ONLY", "").lower() in {"1", "true"}
 RESULTS.mkdir(parents=True, exist_ok=True)
 app.mount("/results", StaticFiles(directory=RESULTS), name="results")
-app.mount("/static", StaticFiles(directory=ROOT / "app/static"), name="static")
+if not API_ONLY:
+    app.mount("/static", StaticFiles(directory=FRONTEND / "static"), name="static")
 gate = asyncio.Semaphore(1)
 
 
 @app.get("/")
 def index():
-    return FileResponse(ROOT / "app/static/index.html")
+    if API_ONLY:
+        return {"service": "PrismRAW API", "health": "/api/health", "docs": "/api/docs"}
+    return FileResponse(FRONTEND / "index.html")
 
 
 @app.get("/api/health")

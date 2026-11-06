@@ -1,8 +1,10 @@
+> Folder update: Python source, scripts, tests, configs, reports, datasets, Dockerfile and dependencies now live under backend/. The website lives under frontend/. Run Python and Docker commands from backend/. The root PowerShell launcher remains the local entry point. For split hosting, follow split-deployment.md; Vercel Root Directory is frontend, and the root Render Blueprint uses backend as its Docker context.
+
 # Local run and deployment packaging
 
 ## Local run (verified workflow)
 
-From the project root, run `./run_local.ps1`. The server binds to **127.0.0.1:7860**, preloads local trained weights and pretrained LPIPS-Squeeze, then serves the camera lab. `--port 7861` selects a different port. Use Ctrl+C in the serving terminal to stop it.
+From the project root, run `./run_local.ps1`. The server binds to **127.0.0.1:7860**, preloads the learned/hybrid FP32 weights and pretrained LPIPS-Squeeze, then serves the camera lab. Optional FP16 weights load only for requests with FP16 selected and are released after inference. `--port 7861` selects a different port. Use Ctrl+C in the serving terminal to stop it.
 
 Required model files: `checkpoints/final-hybrid.pt`, `final-learned.pt`, and `final-hybrid-fp16.pt`. Demo scenes live in `data/processed/demo/`. These final model files and small demo crops are now tracked in Git and also included in the local release ZIP; full training data and non-final weights remain excluded. The pretrained SqueezeNet backbone is cached under `.cache/torch`; the first setup needs a roughly 5 MB download if not cached. Runtime uses no cloud inference.
 
@@ -39,7 +41,7 @@ Team T47 and USNs 1RUA24CSE0371, 1RUA24CSE0365 are recorded in `configs/team.jso
 
 1. Open https://render.com/deploy?repo=https://github.com/Hey-Ritik/PrismRAW and sign in to your Render account.
 2. Connect the GitHub repository if Render requests access. The service configuration comes from the root `render.yaml`.
-3. Confirm service `prismraw-t47`, runtime Docker, branch `main`, plan **Free**, Dockerfile `./Dockerfile`, and health path `/api/health`.
+3. Confirm service `prismraw-t47`, runtime Docker, branch `main`, plan **Free**, Dockerfile `./backend/Dockerfile`, and health path `/api/health`.
 4. Confirm the four public environment values below. No secret keys, database URL, custom build command or Docker command is required.
 5. Create/deploy the service. Inspect the build and runtime logs. When it is Live, open its generated URL and verify `/api/health`, a sample scene, an unreferenced array upload and a supported DNG upload.
 6. Keep FP16 comparison off for routine CPU use. After later repository updates, use Manual Deploy → Deploy latest commit.
@@ -56,6 +58,8 @@ Team T47 and USNs 1RUA24CSE0371, 1RUA24CSE0365 are recorded in `configs/team.jso
 The final three checkpoints and all twelve sample array/metadata files are deliberately tracked. `reports/render_readiness.json` records their sizes and SHA-256 hashes. Source/metric dependencies and the pretrained SqueezeNet backbone are installed at image build time. Full datasets are not needed to serve the app.
 
 ## Limits and troubleshooting
+
+The comparison engine saves previews and releases classical stage arrays before neural inference. It scores and saves each reconstruction in sequence rather than retaining all outputs, and releases learned/hybrid intermediates before scoring. Crop sizes and live LPIPS scoring are unchanged. An exact four-method check at 64px reproduced every PNG and all reference scores. The same 256px sample/array/DNG smoke sequence measured 494.1 MiB before versus 492.2 MiB after on Windows; that small difference may be within run-to-run variation and does not establish a substantial RAM reduction. See `reports/memory_optimization.json` for scope and evidence.
 
 - Render Free currently has 512 MB RAM and a limited CPU share. Smaller crops reduce inference allocation, and DNG is cropped before float normalization; native decoding still consumes memory. Local Windows process-tree RSS is not a Linux cgroup memory guarantee. If logs show an out-of-memory exit, inspect the failing input and reduce workload or use a larger instance; health pings cannot correct resource exhaustion.
 - The actual Docker build is not verified locally because Docker is unavailable. A successful local hosted-profile smoke test does not prove a successful Render build. Read Render's build logs for dependency/network/platform errors.

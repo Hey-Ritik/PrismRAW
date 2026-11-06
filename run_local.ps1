@@ -1,8 +1,7 @@
 $ErrorActionPreference = 'Stop'
-Set-Location $PSScriptRoot
-if (-not (Test-Path '.venv/Scripts/python.exe')) {
-    throw 'Create .venv and install the project extras first; see README.md.'
-}
-$env:PYTHONPATH = Join-Path $PSScriptRoot 'src'
+$python = Join-Path $PSScriptRoot '.venv/Scripts/python.exe'
+if (-not (Test-Path $python)) { throw 'Create the root .venv and install backend dependencies first.' }
+$env:PYTHONPATH = Join-Path $PSScriptRoot 'backend/src'
 $env:TORCH_HOME = Join-Path $PSScriptRoot '.cache/torch'
-& '.venv/Scripts/python.exe' scripts/serve.py @args
+Push-Location (Join-Path $PSScriptRoot 'backend')
+try { & $python scripts/serve.py @args } finally { Pop-Location }

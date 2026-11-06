@@ -23,7 +23,7 @@ CHECKPOINTS = {"learned": ROOT / "checkpoints/final-learned.pt",
                "optimized": ROOT / "checkpoints/final-hybrid-fp16.pt"}
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=2)
 def cached_model(method, modified):
     loader = load_learned if method == "learned" else load_hybrid
     return loader(CHECKPOINTS[method])[0]
@@ -72,48 +72,67 @@ def compare(raw, metadata, clean=None, reference_rgb=None, adaptive=True, method
     folder = RESULTS / identifier
     folder.mkdir()
     urls = lambda name: f"/results/{identifier}/{name}"
+    def save(name, image):
+        Image.fromarray(np.rint(np.clip(image, 0, 1) * 255).astype(np.uint8)).save(folder / f"{name}.png")
+        return urls(f"{name}.png")
+
     classical, stages, stats = process(raw, metadata, adaptive=adaptive)
-    outputs = {"classical": classical}
     timings = {"classical": stats["processing_ms"]}
-    enabled = available_models()
-    for method in methods or ("learned", "hybrid", "optimized"):
-        if method == "classical" or not enabled.get(method):
-            continue
-        model = cached_model(method, CHECKPOINTS[method].stat().st_mtime_ns)
-        before = time.perf_counter()
-        if method == "learned":
-            _, intermediate, _ = process_learned(raw, metadata, model, stats["exposure_gain"])
-            image = render_linear(intermediate["predicted_linear"], stats["exposure_gain"], stats["sharpen_strength"])[0]
-        else:
-            image, _, _ = process_hybrid(raw, metadata, model, adaptive=adaptive)
-        timings[method] = (time.perf_counter() - before) * 1000
-        outputs[method] = image
+    del stages["denoised_linear"], stages["tone_mapped_linear"]
+    # Save previews before neural inference so stage arrays do not overlap with
+    # network activations or the perceptual metric's buffers.
+    preview = np.repeat(stages.pop("normalized_mosaic")[..., None], 3, axis=-1)
+    preview = np.clip(preview * stats["exposure_gain"], 0, 1) ** (1/2.2)
+    images = {"sensor_preview": save("sensor-preview", preview)}
+    del preview
+    intermediate_urls = {"White-balanced mosaic": save("stage-balanced", np.clip(stages.pop("balanced_mosaic"), 0, 1) ** (1/2.2)),
+                         "Demosaiced camera RGB": save("stage-demosaic", np.clip(stages.pop("camera_rgb"), 0, 1) ** (1/2.2)),
+                         "Colour corrected": save("stage-colour", render_linear(stages.pop("linear_srgb"), stats["exposure_gain"])[0]),
+                         "Denoised + tone mapped": save("stage-denoised", stages.pop("encoded_srgb"))}
+    del stages
     target = reference_rgb
     target_kind = "Uploaded RGB reference (alignment supplied by user)" if reference_rgb is not None else None
     if clean is not None:
-        _, clean_stages, _ = process(clean, metadata, adaptive=False, denoise=False)
-        target = render_linear(clean_stages["linear_srgb"], stats["exposure_gain"])[0]
+        clean_display, clean_stages, clean_stats = process(clean, metadata, adaptive=False, denoise=False)
+        clean_linear = clean_stages["linear_srgb"]
+        del clean_display, clean_stages, clean_stats
+        target = render_linear(clean_linear, stats["exposure_gain"])[0]
+        del clean_linear
         target_kind = "Fixed-rendered matching clean RAW; approximate colour calibration"
     metrics = {}
     if target is not None:
         from smartphone_isp.evaluation.metrics import quality
-        for method, image in outputs.items():
+
+    def record(method, image):
+        if target is not None:
             metrics[method] = quality(image, target, perceptual=min(raw.shape) >= 64)
-    images = {}
-    def save(name, image):
-        Image.fromarray(np.rint(np.clip(image, 0, 1) * 255).astype(np.uint8)).save(folder / f"{name}.png")
-        return urls(f"{name}.png")
-    for method, image in outputs.items():
         images[method] = save(method, image)
+
+    record("classical", classical)
+    del classical
+    enabled = available_models()
+    for method in methods or ("learned", "hybrid", "optimized"):
+        if method == "classical" or not enabled.get(method):
+            continue
+        # The optional FP16 model is neither preloaded nor kept in the cache.
+        model = (load_hybrid(CHECKPOINTS[method])[0] if method == "optimized"
+                 else cached_model(method, CHECKPOINTS[method].stat().st_mtime_ns))
+        before = time.perf_counter()
+        if method == "learned":
+            unused_display, intermediate, method_stats = process_learned(raw, metadata, model, stats["exposure_gain"])
+            predicted = intermediate["predicted_linear"]
+            del unused_display, intermediate, method_stats
+            image = render_linear(predicted, stats["exposure_gain"], stats["sharpen_strength"])[0]
+            del predicted
+        else:
+            image, intermediate, method_stats = process_hybrid(raw, metadata, model, adaptive=adaptive)
+            del intermediate, method_stats
+        timings[method] = (time.perf_counter() - before) * 1000
+        del model
+        record(method, image)
+        del image
     if target is not None:
         images["reference"] = save("reference", target)
-    preview = np.repeat(stages["normalized_mosaic"][..., None], 3, axis=-1)
-    preview = np.clip(preview * stats["exposure_gain"], 0, 1) ** (1/2.2)
-    images["sensor_preview"] = save("sensor-preview", preview)
-    intermediate_urls = {"White-balanced mosaic": save("stage-balanced", np.clip(stages["balanced_mosaic"], 0, 1) ** (1/2.2)),
-                         "Demosaiced camera RGB": save("stage-demosaic", np.clip(stages["camera_rgb"], 0, 1) ** (1/2.2)),
-                         "Colour corrected": save("stage-colour", render_linear(stages["linear_srgb"], stats["exposure_gain"])[0]),
-                         "Denoised + tone mapped": save("stage-denoised", stages["encoded_srgb"])}
     public_metadata = {key: metadata[key] for key in ("normalized", "bayer_pattern", "white_balance", "camera_to_linear_srgb", "colour_transform", "dataset", "scene_id") if key in metadata}
     report = {"id": identifier, "images": images, "intermediates": intermediate_urls,
               "processing_ms": timings, "metrics": metrics, "reference_kind": target_kind,

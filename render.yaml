@@ -5,11 +5,15 @@ services:
     plan: free
     repo: https://github.com/Hey-Ritik/PrismRAW
     branch: main
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /api/health
     autoDeployTrigger: "off"
     envVars:
+      - key: PRISMRAW_API_ONLY
+        value: "1"
+      - key: PRISMRAW_FRONTEND_ORIGINS
+        sync: false
       - key: PORT
         value: "7860"
       - key: PRISMRAW_HOSTED

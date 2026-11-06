@@ -80,11 +80,15 @@
     }
   ],
   "environment": {
+    "PRISMRAW_API_ONLY": "1",
     "PORT": "7860",
     "PRISMRAW_HOSTED": "1",
     "PRISMRAW_MAX_CROP": "256",
     "PRISMRAW_TORCH_THREADS": "1"
   },
+  "prompted_environment": [
+    "PRISMRAW_FRONTEND_ORIGINS"
+  ],
   "docker_build": "not run: Docker unavailable in current environment",
   "render_deployment": "not created; account authorization required"
 }
