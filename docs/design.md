@@ -1,33 +1,28 @@
-# Design document
+# PrismRAW design
 
 ## Problem and scope
-P2: reconstruct high-quality RGB from smartphone RAW while balancing quality, model size, memory, and latency.
+P2 requires efficient hybrid smartphone RAW-to-RGB reconstruction, comparisons against classical and learned-only processing, adaptation, model optimization and measured quality/resource trade-offs. This implementation provides a local app and reproducible research evaluation, for team T47 (USNs 1RUA24CSE0371, 1RUA24CSE0365), with public hosting pending.
 
-## Input contract
-Validated sensor data plus explicit normalization state and camera metadata. See `data/README.md`.
+## Sensor and metadata contract
+2x2 Bayer arrays with explicit normalization state, CFA phase, RGB white-balance gains, and camera-to-linear-sRGB matrix. DNG extraction uses rawpy sensor buffers plus profile metadata; array loading supports NPY/NPZ and both MATLAB formats. Colour profiles are approximate single-illuminant transforms, not full calibrated DNG processing. Input limits, privacy and deployment behavior are in deployment.md.
 
-## Proposed approach
-Classical camera stages with a compact conditioned RGB residual network. Maintain a separate packed-Bayer learned baseline.
+## Processing architecture
+Classical: normalization, Bayer white balance, bilinear demosaicing, CCM, bilateral filtering, adaptive exposure and luminance tone mapping, sRGB encoding and mild sharpening. Hybrid: the same front end and denoising, followed by a conditioned residual U-Net before common display rendering. Learned-only: packed Bayer and 16 camera features through a compact U-Net with resize/convolution RGB reconstruction, then the common display renderer. FP16 hybrid really executes half-precision weights/tensors and converts output to float32 for rendering.
 
-## Dataset and splits
-Initial real-data validation uses a clean RAW and metadata from the SIDD authors' reference repository. The expanded pinned SIDD-CC pilot includes five physical scenes: 003/004/005 train, 001 validation, 002 test. Eight patches per scene are used. `configs/pilot-splits.json` freezes original holdouts; additional scenes enter training. Existing validation/test array values were checked to remain identical. All three training captures are Nexus 6, while validation is Samsung S6 and test Google Pixel. Scene and camera changes are confounded. Independent alignment and colour-rendering validation remain pending.
+## Dataset and leakage control
+Pinned SIDD-CC revision 5eb2ab6375d7f99f36b59bb5aacb46af18409412, ten captures from ten physical scenes across Nexus 6, Google Pixel, iPhone 7, LG G4 and Samsung S6. Scenes 003–008 train, 001/002 validation, 009/010 fresh final holdout. Thirty-two deterministic patches per scene. Frozen scene assignments precede extraction. Old pilot test 002 became development-only because it was already inspected; fresh final data was excluded from model selection. Same-CFA translational checks found zero shift for these pairs at the tested resolution, without establishing exact local registration.
 
-## Training
-Implemented: conditioned RGB residual U-Net and learned-only packed-Bayer U-Net with subpixel RGB reconstruction. Training uses linear-RGB L1 plus gradient consistency, Adam, seeded CPU execution, and validation-only checkpoint selection. Learned-only camera inputs include white balance, colour matrix, and CFA phase; these are network features, not classical preprocessing operations. `configs/expanded-hybrid.yaml` and `configs/expanded-learned.yaml` execute 20 epochs on the same expanded data. Targets use an approximate fixed transform of clean RAW. No perceptual/explicit colour loss or augmentation is included. Larger training remains necessary; both models underperform classical on the exploratory pilot test.
+## Training and selection
+Hybrid learns a residual after classical denoising. Learned-only reconstructs colour and structure from RAW. Both use 30 CPU epochs, Adam, L1 plus gradient consistency, fixed seeds and matching four-pixel context. Outputs are cropped to central 128x128 targets for loss. Optional spatial augmentation updates Bayer phase and semantic packing, and is restricted to training; it was disabled in recorded final runs. Checkpoints and residual blend are selected by validation linear-RGB L1. Test scores do not choose models. Recipe/config, manifest hash, epoch, dtype and input stage are recorded with checkpoints.
 
-Updated development protocol: `configs/context-*.yaml` uses schema 3 inputs with identical four-pixel RAW context for all methods and explicit central output cropping. A resize/convolution decoder (checkpoint format `prismraw-bayer-resize-v2`) is compared against the preserved subpixel-v1 decoder using validation only. V2 improves validation PSNR and reduces periodic phase bias, but still oversmooths. The inspected exploratory test is not rescored for this architecture change. Historical reports remain unchanged.
+## Evaluation and efficiency
+Target RGB is the fixed approximate rendering of clean RAW. All compared methods share noisy-input exposure settings. Report PSNR, SSIM, Delta E 00 in Lab D65, LPIPS-Squeeze v0.1, model parameters/file sizes, warmed CPU median/p95 latency and sampled process RAM. RSS includes the runtime and is not smartphone memory. Ablations remove learned correction/adaptation and compare precision. Synthetic stress tests retain the original target and are reported separately from real captures. Full methodology and measured results are in the ordered report and JSON.
 
-## Evaluation
-PSNR, SSIM, Delta E, LPIPS; parameters, exported size, latency, peak memory. Record target encoding, metric ranges, hardware, image resolution, warm-up and timing protocol.
+## Current evidence and limitations
+On 64 fresh holdout patches, hybrid improves mean PSNR from 38.4589 to 39.2312 dB, SSIM from 0.8867 to 0.9027, colour error from 2.7438 to 2.5231, and LPIPS from 0.1042 to 0.0936. This limited two-scene result does not establish broad superiority. Learned-only still oversmooths and shifts colours. Highlight clipping, extreme noise, unknown profiles and mixed illumination remain failure modes. FP16 reduces storage but may worsen CPU latency. No on-device speed or absolute colour-fidelity claim is made.
 
-## Optimization
-Select runtime first; compare FP32 with supported FP16 or INT8. Report quality change and complete pipeline timings. Hosted inference does not establish on-device performance.
+## Application and deployment
+FastAPI serves a responsive local UI with serialized CPU inference, samples, uploads, loading/error states, intermediate visualizations, optional reference metrics and downloadable results. Preloading avoids expensive model/metric initialization on the first click. Files are cropped rather than resizing the mosaic; user references must already correspond spatially. Docker packaging and a small binary release bundle are supplied. Local use is verified; public hosting, actual Docker build and team viva are not falsely marked complete.
 
-## Failure cases and limitations
-Investigate clipping, mixed illuminants, metadata errors, unseen cameras, oversmoothing, and demosaicing artifacts. No cross-camera robustness claims without evidence.
-
-## Deployment
-Planned hosted comparison UI with loading/error states and bounded upload sizes. No deployment exists yet.
-
-## Privacy, licensing, and ethics
-Record dataset/code licenses. Avoid retaining user uploads by default; document temporary-file retention. Strip private camera/location metadata from downloadable previews unless intentionally requested.
+## Privacy and attribution
+No cloud inference or external image API. Local uploads use temporary storage; generated results expire after an hour on a later request. The local-only privacy wording must change if hosted remotely. Full training data and weights are not committed to Git; the release contains explicitly attributed small demo crops and weights. Dataset/software notices are in THIRD_PARTY_NOTICES.md.

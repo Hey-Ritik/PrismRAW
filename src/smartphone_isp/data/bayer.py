@@ -20,3 +20,15 @@ def pack_bayer(raw, pattern="RGGB"):
     r, b = positions["R"], positions["B"]
     indices = (r, (r[0], 1 - r[1]), (b[0], 1 - b[1]), b)
     return np.stack([image[row::2, col::2] for row, col in indices], axis=-1)
+
+
+def unpack_bayer(packed, pattern="RGGB"):
+    packed = np.asarray(packed)
+    pattern = pattern.upper()
+    if pattern not in PATTERNS or packed.ndim != 3 or packed.shape[-1] != 4:
+        raise ValueError("Expected packed HxWx4 Bayer and a supported pattern")
+    result = np.empty((packed.shape[0]*2, packed.shape[1]*2), dtype=packed.dtype)
+    r, b = [divmod(pattern.index(color), 2) for color in ("R", "B")]
+    for channel, (row, col) in enumerate((r, (r[0], 1-r[1]), (b[0], 1-b[1]), b)):
+        result[row::2, col::2] = packed[..., channel]
+    return result

@@ -56,7 +56,7 @@ def render_linear(linear, exposure=1.0, sharpen=0.0):
     return np.clip(encoded + sharpen * (encoded - _blur(encoded)), 0, 1), toned, encoded
 
 
-def process(raw, metadata, adaptive=True):
+def process(raw, metadata, adaptive=True, denoise=True):
     """Return display RGB, named intermediates, and measured processing statistics.
 
     Metadata requires normalized(bool), bayer_pattern, white_balance RGB gains,
@@ -99,7 +99,7 @@ def process(raw, metadata, adaptive=True):
     luminance = np.maximum(linear @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32), 0)
     median_luma = float(np.median(luminance))
     sigma = float(np.clip(noise * 2, 0.005, 0.08)) if adaptive else 0.03
-    denoised = bilateral(linear, sigma)
+    denoised = bilateral(linear, sigma) if denoise else linear.copy()
     exposure = float(np.clip(0.18 / max(median_luma, 1e-4), 0.5, 3)) if adaptive else 1.0
     sharpen = float(0.15 / (1 + 20 * noise)) if adaptive else 0.15
     output, toned, encoded = render_linear(denoised, exposure, sharpen)

@@ -1,0 +1,12 @@
+manifest: data/processed/final/manifest.json
+output: runs/final-learned
+checkpoint: checkpoints/final-learned.pt
+model_kind: learned
+architecture: resize-v2
+seed: 42
+epochs: 30
+batch_size: 4
+learning_rate: 0.0002
+base_channels: 16
+threads: 2
+device: cpu

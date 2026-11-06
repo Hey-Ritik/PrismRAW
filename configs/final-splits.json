@@ -1,0 +1,4 @@
+{
+  "scenes": {"001": "validation", "002": "validation", "003": "train", "004": "train", "005": "train", "006": "train", "007": "train", "008": "train", "009": "test", "010": "test"},
+  "scope": "Old inspected pilot test 002 becomes development validation only; 009/010 are fresh final holdouts, excluded from training and model selection."
+}

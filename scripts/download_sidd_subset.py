@@ -29,6 +29,7 @@ def sha256(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenes", type=int, default=3, choices=range(3, 11))
+    parser.add_argument("--diverse-cameras", action="store_true", help="Choose varied cameras for expanded training scenes")
     args = parser.parse_args()
     api = f"https://huggingface.co/api/datasets/{REPO}/tree/{REVISION}/"
     directories = request_json(api + "Raw/train/Data?limit=1000")
@@ -37,6 +38,13 @@ def main():
         if entry["type"] == "directory":
             name = entry["path"].split("/")[-1]
             groups.setdefault(name.split("_")[1], entry["path"])
+    if args.diverse_cameras:
+        preferences = {"004": "GP", "005": "IP", "006": "G4", "007": "S6"}
+        for scene, camera in preferences.items():
+            candidates = [entry["path"] for entry in directories if entry["type"] == "directory"
+                          and entry["path"].split("/")[-1].split("_")[1:3] == [scene, camera]]
+            if candidates:
+                groups[scene] = sorted(candidates)[0]
     root = Path("data/raw/sidd-cc-subset")
     records = []
     for scene_id, directory in sorted(groups.items())[:args.scenes]:

@@ -57,8 +57,8 @@ def train(config):
         raise ValueError("Unknown learned architecture")
     manifest = json.loads(Path(config["manifest"]).read_text(encoding="utf-8"))
     context = int(manifest.get("input_context", 0))
-    train_data = PairedDataset(config["manifest"], "train", kind)
-    val_data = PairedDataset(config["manifest"], "validation", kind)
+    train_data = PairedDataset(config["manifest"], "train", kind, config.get("hybrid_input", "linear"), bool(config.get("augment", False)))
+    val_data = PairedDataset(config["manifest"], "validation", kind, config.get("hybrid_input", "linear"))
     train_loader = DataLoader(train_data, batch_size=config["batch_size"], shuffle=True,
                               generator=torch.Generator().manual_seed(seed), num_workers=0)
     val_loader = DataLoader(val_data, batch_size=config["batch_size"], num_workers=0)

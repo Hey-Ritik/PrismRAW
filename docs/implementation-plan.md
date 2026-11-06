@@ -1,36 +1,23 @@
-# Implementation plan
+# Implementation and verification status
 
-## 1. Data validation
-- [x] Download one SIDD-CC noisy/clean RAW development pair with metadata and provenance.
-- [x] Inspect RAW pair dimensions, values, and metadata; RGB target validation remains pending.
-- [ ] Verify CFA, normalization state, colour matrices and registration.
-- [x] Save a deterministic pilot scene split plan before patch extraction, then save patch manifest.
+- [x] Pinned paired dataset downloads, provenance and checksum checks.
+- [x] Ten physical scenes across five camera types; fixed development/final splits.
+- [x] CFA/normalization inspection and coarse translational correspondence checks.
+- [x] NPY/NPZ/MAT/HDF5 input and real Bayer DNG extraction.
+- [x] Classical ISP with adaptive parameters and intermediate outputs.
+- [x] Learned-only RAW-to-RGB model, hybrid residual model, matched RAW context.
+- [x] CFA-safe optional training augmentation and scene-leakage checks.
+- [x] Thirty-epoch training with validation-only checkpoint/blend selection.
+- [x] Full PSNR/SSIM/Delta E/LPIPS comparison on fresh final scenes.
+- [x] Refinement/adaptation/precision ablations and synthetic stress/failure analysis.
+- [x] Actual FP16 export/inference, model size, CPU latency and sampled process memory.
+- [x] Responsive local app, samples/uploads, loading/errors, references, stage views, downloads.
+- [x] Docker packaging recipe, reproducibility docs and release-bundle script.
+- [x] Local desktop/mobile browser and download checks; pipeline/API tests.
+- [x] Ordered measured evaluation report and architecture/design/demo documents.
+- [ ] Absolute colour calibration, broader generalization and true mobile-device benchmarking: research limitations, not claimed complete.
+- [x] Team T47 and both USNs recorded in configuration and the submission report.
+- [ ] Public hosted URL and actual team demo/viva: submission actions pending.
+- [ ] Docker image build: recipe supplied; not verified on this machine.
 
-## 2. Classical ISP
-- [ ] Implement MAT/DNG adapters without hidden full-ISP preprocessing.
-- [x] Integrate Bayer white balance and bilinear demosaicing for array inputs.
-- [ ] Validate camera-to-output colour transformation.
-- [x] Add bilateral denoising, adaptive tone mapping, controlled sharpening.
-- [x] Export intermediate arrays and end-to-end RGB output.
-
-## 3. Learning
-- [ ] Implement paired patch dataset and CFA-safe augmentation.
-- [x] Implement and run compact packed-Bayer-to-RGB baseline with explicit camera metadata.
-- [x] Run three-epoch CPU pilot training with explicit linear-RGB input/target pairs; larger training pending.
-- [x] Add noise/illumination conditioning and checkpoint/config tracking.
-- [x] Expand to five physical scenes and run both models for 20 CPU epochs, preserving pilot holdouts.
-- [x] Add shared four-pixel RAW context and explicit prediction/target shape checks.
-- [x] Compare subpixel and resize decoders on validation with matched training settings; preserve versioned checkpoints.
-
-## 4. Evidence
-- [x] Run exploratory classical/learned-only/hybrid PSNR comparison on identical pilot patches; full metrics/fresh final holdout pending.
-- [ ] Add metric definitions, colour-space conversions, and alignment checks.
-- [ ] Ablate learned refinement, adaptation, and reduced precision separately.
-- [ ] Record real and synthetic stress tests separately; explain failures.
-
-## 5. Optimization and delivery
-- [ ] Select device/runtime, export and benchmark optimized model.
-- [ ] Measure model and complete-pipeline latency and memory.
-- [ ] Implement and host the comparison app.
-- [ ] Complete evaluation report, architecture, design, reproducibility instructions.
-- [ ] Rehearse a three-minute demonstration with unseen inputs.
+Historical pilot reports are retained as experimental history. Current results and limits are recorded in the final report; local operation is not presented as a public deployment.

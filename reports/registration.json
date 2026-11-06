@@ -1,0 +1,95 @@
+{
+  "method": "Same-CFA samples at stride 8, phase cross-correlation with 10x shift refinement. Checks translation only; no assertion about local warp, motion, absolute colour or subpixel registration.",
+  "results": [
+    {
+      "scene_id": "001",
+      "instance": "0001_001_S6_00100_00060_3200_L",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "002",
+      "instance": "0034_002_GP_00100_00160_3200_N",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "003",
+      "instance": "0054_003_N6_00100_00160_5500_N",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "004",
+      "instance": "0083_004_GP_00050_00020_4400_N",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "005",
+      "instance": "0110_005_IP_00100_00100_5500_L",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "006",
+      "instance": "0122_006_G4_00100_00050_3200_N",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "007",
+      "instance": "0150_007_S6_00100_00100_5500_L",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "008",
+      "instance": "0167_008_N6_00100_00050_4400_L",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "009",
+      "instance": "0192_009_IP_00100_00200_3200_N",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    },
+    {
+      "scene_id": "010",
+      "instance": "0198_010_GP_00100_00200_5500_N",
+      "estimated_raw_shift_yx": [
+        0.0,
+        0.0
+      ],
+      "within_one_raw_pixel": true
+    }
+  ]
+}

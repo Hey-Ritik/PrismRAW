@@ -1,0 +1,73 @@
+{
+  "hardware": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 141 Stepping 1, GenuineIntel",
+    "logical_cpus": 12,
+    "torch": "2.7.1+cpu",
+    "device": "CPU",
+    "torch_threads": 2
+  },
+  "scope": "Isolated process per method; complete array processing, excludes model loading, file I/O, network and metrics. Sampled RSS includes Python/PyTorch runtime, not model-only memory. Not a smartphone measurement.",
+  "methods": {
+    "classical": {
+      "median_ms": 99.46635000233073,
+      "p95_ms": 129.83223999945037,
+      "peak_process_rss_mib": 201.16015625,
+      "incremental_peak_rss_mib": 8.57421875,
+      "parameters": 0,
+      "model_bytes": 0,
+      "iterations": 10,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "float32"
+    },
+    "learned": {
+      "median_ms": 41.478200000710785,
+      "p95_ms": 65.88168000344012,
+      "peak_process_rss_mib": 242.6171875,
+      "incremental_peak_rss_mib": 1.8828125,
+      "parameters": 123459,
+      "model_bytes": 503183,
+      "iterations": 10,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float32"
+    },
+    "hybrid": {
+      "median_ms": 153.79069999835338,
+      "p95_ms": 168.4307749990694,
+      "peak_process_rss_mib": 280.23828125,
+      "incremental_peak_rss_mib": 10.33984375,
+      "parameters": 118595,
+      "model_bytes": 483245,
+      "iterations": 10,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float32"
+    },
+    "optimized": {
+      "median_ms": 21742.884950002917,
+      "p95_ms": 28262.636000000195,
+      "peak_process_rss_mib": 290.33203125,
+      "incremental_peak_rss_mib": 69.5859375,
+      "parameters": 118595,
+      "model_bytes": 245497,
+      "iterations": 10,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float16"
+    }
+  }
+}

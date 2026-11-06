@@ -1,0 +1,16 @@
+.git
+.venv
+.cache
+work
+runs
+outputs
+**/__pycache__
+data/raw
+data/processed/*
+!data/processed/demo
+!data/processed/demo/**
+checkpoints/*
+!checkpoints/final-hybrid.pt
+!checkpoints/final-learned.pt
+!checkpoints/final-hybrid-fp16.pt
+.env

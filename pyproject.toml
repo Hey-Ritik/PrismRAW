@@ -7,13 +7,13 @@ name = "smartphone-isp"
 version = "0.1.0"
 description = "Hackathon P2: efficient hybrid smartphone image signal processing"
 requires-python = ">=3.11"
-dependencies = ["numpy>=1.26", "opencv-python-headless>=4.9", "Pillow>=10", "PyYAML>=6"]
+dependencies = ["numpy>=1.26", "Pillow>=10", "PyYAML>=6"]
 
 [project.optional-dependencies]
-raw = ["rawpy>=0.21", "scipy>=1.12", "h5py>=3.10"]
+raw = ["rawpy>=0.21", "scipy>=1.12", "h5py>=3.10", "tifffile>=2024"]
 train = ["torch>=2.2", "torchvision>=0.17"]
 eval = ["scikit-image>=0.22", "lpips>=0.1.4", "psutil>=5.9"]
-app = ["gradio>=5"]
+app = ["fastapi>=0.115", "uvicorn>=0.30", "python-multipart>=0.0.18"]
 
 [project.scripts]
 isp = "smartphone_isp.cli:main"

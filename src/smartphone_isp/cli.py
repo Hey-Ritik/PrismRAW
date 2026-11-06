@@ -14,7 +14,7 @@ def main():
     for mode in ("classical", "hybrid", "learned"):
         command = commands.add_parser(mode, help=f"Process a Bayer array using the {mode} ISP")
         command.add_argument("--input", required=True, type=Path)
-        command.add_argument("--metadata", required=True, type=Path)
+        command.add_argument("--metadata", type=Path, help="Required for arrays; DNG reads sensor metadata")
         command.add_argument("--output", required=True, type=Path)
         command.add_argument("--key", help="Array variable in MAT/NPZ")
         if mode != "learned":
@@ -43,8 +43,14 @@ def run_inference(args):
     from smartphone_isp.data.arrays import load_raw
     from smartphone_isp.pipelines.classical import process
 
-    raw = load_raw(args.input, args.key)
-    metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
+    if args.input.suffix.lower() == ".dng":
+        from smartphone_isp.data.dng import load_dng
+        raw, metadata = load_dng(args.input)
+    else:
+        if args.metadata is None:
+            raise ValueError("Array input requires --metadata camera JSON")
+        raw = load_raw(args.input, args.key)
+        metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
     if args.command == "learned":
         import torch
         from smartphone_isp.pipelines.learned import load_model, process_learned

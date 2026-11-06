@@ -8,6 +8,23 @@ from smartphone_isp.data.arrays import load_raw
 
 
 class ArrayTests(unittest.TestCase):
+    def test_archive_masquerading_as_npy_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "fake.npy"
+            with path.open("wb") as stream:
+                np.savez(stream, data=np.ones((8, 8)))
+            with self.assertRaisesRegex(ValueError, "NPY"):
+                load_raw(path)
+            path.unlink()
+
+    def test_loaded_npy_does_not_lock_temporary_upload(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "upload.npy"
+            np.save(path, np.ones((8, 8), dtype=np.float32))
+            array = load_raw(path)
+            path.unlink()
+            self.assertEqual(float(array.mean()), 1)
+
     def test_npy_round_trip(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "sample.npy"

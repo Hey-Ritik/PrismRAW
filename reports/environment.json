@@ -1,0 +1,20 @@
+{
+  "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+  "packages": {
+    "numpy": "2.4.1",
+    "scipy": "1.16.0",
+    "Pillow": "10.4.0",
+    "torch": "2.7.1",
+    "torchvision": "0.22.1",
+    "scikit-image": "0.26.0",
+    "lpips": "0.1.4",
+    "rawpy": "0.28.0",
+    "h5py": "3.16.0",
+    "tifffile": "2026.10.15",
+    "fastapi": "0.128.0",
+    "uvicorn": "0.40.0",
+    "python-multipart": "0.0.22",
+    "psutil": "7.2.2",
+    "PyYAML": "6.0.2"
+  }
+}

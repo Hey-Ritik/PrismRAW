@@ -12,5 +12,6 @@ checkpoints/*
 !checkpoints/.gitkeep
 runs/
 work/
+.cache/
 outputs/*
 !outputs/.gitkeep

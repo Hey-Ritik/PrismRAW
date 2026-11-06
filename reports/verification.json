@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-07",
+  "unit_tests": {
+    "count": 27,
+    "status": "passed"
+  },
+  "browser": {
+    "desktop": "passed",
+    "mobile": "passed",
+    "pipelines": 4,
+    "default_total_time": "4.00 s total",
+    "evaluation_summary": "passed",
+    "download": "passed",
+    "javascript_errors": []
+  },
+  "uploads": {
+    "array_upload_without_reference": "passed",
+    "array_total_ms": 1726.1759000029997,
+    "dng_upload_without_sidecar": "passed",
+    "dng_total_ms": 3287.971899997501,
+    "invalid_input": "passed"
+  },
+  "dng": {
+    "sensor_shape": [
+      3000,
+      5328
+    ],
+    "pattern": "GRBG",
+    "rgb_shape": [
+      256,
+      256,
+      3
+    ],
+    "status": "passed",
+    "colour_transform": "Approximate LibRaw/profile single-illuminant camera-to-XYZ, neutral-normalized to D65; not full dual-illuminant DNG calibration"
+  },
+  "local_url": "http://127.0.0.1:7860",
+  "public_hosting": "not published",
+  "docker_build": "not verified"
+}

@@ -28,18 +28,20 @@ def load_model(checkpoint, device="cpu"):
         raise ValueError("Expected a trained PrismRAW Bayer-to-RGB checkpoint")
     model_type = ResizeRawToRGBNet if document["format"] == "prismraw-bayer-resize-v2" else RawToRGBNet
     model = model_type(document["base_channels"]).to(device)
+    if document.get("precision") == "float16":
+        model.half()
     model.load_state_dict(document["state_dict"])
     model.eval()
     return model, document
 
 
 def reconstruct(model, packed, calibration, device="cpu"):
-    source = torch.from_numpy(np.ascontiguousarray(packed.transpose(2, 0, 1))).unsqueeze(0).to(device)
+    source = torch.from_numpy(np.ascontiguousarray(packed.transpose(2, 0, 1))).unsqueeze(0).to(device=device, dtype=next(model.parameters()).dtype)
     maps = torch.as_tensor(calibration, dtype=source.dtype, device=device).view(1, 16, 1, 1)
     maps = maps.expand(1, 16, *packed.shape[:2])
     with torch.inference_mode():
         result = model(source, maps)
-    return result[0].permute(1, 2, 0).cpu().numpy()
+    return result[0].permute(1, 2, 0).float().cpu().numpy()
 
 
 def process_learned(raw, metadata, model, exposure=1.0):

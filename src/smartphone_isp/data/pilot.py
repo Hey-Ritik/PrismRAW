@@ -72,6 +72,7 @@ def prepare(index_path, destination, patch_size=128, patches_per_scene=8, seed=4
             sample_id = f"{record['instance'][:4]}-{i:03d}"
             path = destination / f"{sample_id}.npz"
             np.savez_compressed(path, source=source, target=target,
+                                denoised=source_stages["denoised_linear"][source_region].astype(np.float32),
                                 packed_raw=pack_bayer(source_stages["normalized_mosaic"][source_region], metadata["bayer_pattern"]),
                                 calibration=np.array(metadata["white_balance"] +
                                     np.asarray(metadata["camera_to_linear_srgb"]).ravel().tolist() +

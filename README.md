@@ -1,158 +1,98 @@
-# Efficient Smartphone ISP — P2
+# PrismRAW
 
-Hybrid smartphone RAW-to-RGB reconstruction combining classical image processing and a lightweight learned model.
+An efficient hybrid smartphone ISP for Computer Vision Hackathon P2. Converts Bayer sensor data into RGB with classical, learned-only, hybrid, and reduced-precision hybrid paths.
 
-## Current status
+## Run locally
 
-All three array-input inference paths now execute: classical, learned-only Bayer-to-RGB, and conditioned hybrid refinement. The expanded CPU pilot has five physical scenes and separate training, validation, and test scenes. A revised resize decoder reduces periodic artifacts in validation, and a new context protocol gives every method the same RAW boundary information. Classical remains strongest; both neural paths still need quality improvements. NPY/NPZ and MATLAB RAW arrays are supported with explicit metadata; direct DNG decoding is pending. Larger training, complete evaluation, optimized export, and hosted UI remain pending.
+The prepared workspace contains the environment, final models and demo crops:
 
-## Setup (PowerShell)
+```powershell
+.\run_local.ps1
+```
+
+Open **http://127.0.0.1:7860** after startup finishes warming the models. Stop with Ctrl+C. `./run_local.ps1 --port 7861` selects another port.
+
+The responsive local app includes real sample scenes, DNG/array uploads, four-way comparison, reference metrics, stage previews, zoom, adaptive controls, evaluation results and downloadable images/reports. Processing preserves Bayer phase using an even-offset central crop up to 512x512. Classical remains the reference baseline; neural quality varies by scene.
+
+## Measured final result
+
+The hybrid scores **39.2312 dB PSNR** against **38.4589 dB** for classical on 64 patches from fresh scenes 009/010. SSIM improves from 0.8867 to 0.9027, Delta E 00 decreases from 2.7438 to 2.5231, and LPIPS-Squeeze decreases from 0.1042 to 0.0936. These are limited local research results against approximate clean-RAW renders, not official benchmark rankings or absolute colour calibration.
+
+FP16 reduces the hybrid checkpoint from 483,245 to 245,497 bytes and preserves measured quality closely. It can be slower on this CPU. See `reports/eval_P2_T47.md`, `reports/final_results.json`, `reports/benchmark.json`, and `reports/optimization.json` for complete evidence and runtime measurements. Learned-only still oversmooths and makes colour errors despite sometimes high SSIM.
+
+## Fresh setup
+
+Use Python 3.11+; the executed Windows environment uses Python 3.13, PyTorch 2.7.1 CPU and torchvision 0.22.1. Select the correct PyTorch build for your device, then:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e .
+python -m pip install -e ".[raw,train,eval,app]"
+$env:PYTHONPATH = 'src'
+$env:TORCH_HOME = Join-Path (Get-Location) '.cache/torch'
 isp check
 ```
 
-Install optional components as needed:
+Final weights and small demo assets are Git-ignored and supplied in `outputs/prismraw-release.zip`; extract its checkpoints and demo folder to a fresh checkout, or reproduce training below. LPIPS downloads a roughly 5 MB pretrained SqueezeNet backbone on first setup if uncached. The local serving process needs no cloud inference.
+
+## Reproduce data and training
 
 ```powershell
-python -m pip install -e ".[raw,train,eval,app]"
+$env:PYTHONPATH = 'src'
+python scripts/download_sidd_subset.py --scenes 10 --diverse-cameras
+python scripts/check_registration.py
+python scripts/prepare_training_data.py --output data/processed/final --existing-splits configs/final-splits.json --input-context 4 --patches-per-scene 32
+python scripts/prepare_demo_assets.py
+python -m smartphone_isp.training.train --config configs/final-hybrid.yaml
+python -m smartphone_isp.training.train --config configs/final-learned.yaml
+python -m smartphone_isp.evaluation.suite --select-blend
+python -m smartphone_isp.evaluation.suite --split validation
+python -m smartphone_isp.evaluation.suite --split test
+python -m smartphone_isp.evaluation.benchmark
+python scripts/write_submission_report.py
+python scripts/package_release.py
 ```
 
-Select a PyTorch build appropriate for your hardware. Python 3.11 or 3.12 is a conservative environment choice if optional packages do not support your Python version.
+The downloader pins SIDD-CC revision `5eb2ab6375d7f99f36b59bb5aacb46af18409412`, verifies sizes/checksums, and records provenance. Six training scenes (003–008), two validation scenes (001/002), and two fresh final scenes (009/010) yield 192/64/64 deterministic 128x128 patches across five phone camera types. Old inspected pilot scene 002 is development validation only. Never tune using the fresh final results.
+
+Every method receives the same four-pixel RAW border. Hybrid input is bilateral-denoised linear RGB; learned-only input is packed Bayer plus camera gains, colour matrix and CFA phase. Models use L1 plus gradient consistency and 30 CPU epochs. Validation chooses checkpoints and hybrid residual blend. Optional CFA-safe augmentation is available with `augment: true`; it was disabled in these recorded final runs. Colour profiles are approximate, and coarse alignment checks do not prove local/subpixel registration.
+
+## Metrics and ablations
+
+PSNR, SSIM, CIEDE2000 (Lab D65), LPIPS v0.1 with pretrained SqueezeNet; parameter count, checkpoint size, warmed median/p95 CPU array-processing latency, and sampled process RSS. Reports include per-scene metrics, learned-refinement removal (classical), adaptation removal, FP16 comparison, and prespecified dark/noisy, heavy-noise and colour-cast stress tests. Metrics can disagree; no single score proves colour or texture quality.
+
+## Tests and application verification
+
+```powershell
+$env:PYTHONPATH = 'src'
+python -m unittest discover -s tests -v
+```
+
+Tests cover sensor normalization, CFA patterns and augmentation, MAT/HDF5 axes, scene leakage, context cropping, gradient updates, versioned checkpoints, FP16 inference, metric conventions and bad API inputs. `scripts/check_browser.py` optionally uses Playwright with installed Edge to check desktop/mobile rendering, sample processing, metric rows, JavaScript errors and ZIP downloads. Browser screenshots are under `outputs/browser-check`.
+
+## Input contract
+
+DNG uses visible Bayer measurements, per-channel black/white normalization and explicit camera/profile metadata. No hidden `rawpy.postprocess()` ISP is used. Arrays accept NPY, NPZ, or MAT (including MATLAB v7.3) plus JSON with `normalized`, `bayer_pattern`, `white_balance` RGB gains, and `camera_to_linear_srgb` (3x3 column-vector convention). Unnormalized arrays also need scalar `black_level` and `white_level`. Use `--key` for NPZ/MAT variables. SIDD MAT RAW is already normalized; do not subtract black twice.
+
+References are optional matching clean RAW arrays or aligned RGB PNG/JPEG. No quality scores are invented for unreferenced uploads. Unsupported files, missing metadata and incompatible dimensions produce errors. Bayer-only support and approximate colour calibration limit generalization to arbitrary cameras.
 
 ## Layout
 
 ```text
-app/                       Future hosted demo
-configs/                   Experiment settings
-data/raw/                  Local dataset files (ignored)
-data/processed/            Cached patches (ignored)
-data/splits/               Scene-level manifests
-src/smartphone_isp/
-  classical/               Sensor normalization and colour processing
-  data/                    Bayer utilities and dataset contract
-  models/                  Lightweight residual network
-  pipelines/               Classical / learned / hybrid integration
-  training/                Training implementation location
-  evaluation/              Metrics and benchmark implementation location
-  optimization/            Export and compression implementation location
-checkpoints/               Local model weights (ignored)
-outputs/                   Generated images and reports (ignored)
-docs/                      Architecture, design, implementation roadmap
-reports/                   Submission evaluation template
-scripts/                   Dataset and experiment entry points
+src/smartphone_isp/   classical, data, models, pipelines, training, evaluation, optimization, app
+app/static/          responsive local camera-lab interface
+configs/             executed recipes and frozen scene policies
+scripts/             data preparation, checks, report generation, packaging and serving
+reports/             measured JSON and ordered submission report
+docs/                architecture, design, deployment and demo guide
+tests/               pipeline, numerical and API regression tests
+checkpoints/         local trained weights (Git-ignored)
+data/                local raw, prepared and demo data (Git-ignored)
+outputs/             app downloads, browser evidence and release ZIP (Git-ignored)
 ```
 
-## First implementation milestone
+## Delivery and remaining submission actions
 
-The classical pipeline has been smoke-tested on synthetic input and a crop of the authors' real clean SIDD reference RAW. This does not establish reconstruction quality. Reference-based metrics must only be computed against aligned ground truth. Preview renders of RAW data are not the original sensor measurements.
+Docker packaging is supplied; see `docs/deployment.md`. The current verification is local, not a claimed public deployment or smartphone benchmark. Docker build has not been verified in this environment. A public host needs adequate resources and updated upload/privacy wording. See `THIRD_PARTY_NOTICES.md` for data and model attribution.
 
-## Run the classical pipeline
-
-Without an editable install, set the source path in PowerShell:
-
-```powershell
-$env:PYTHONPATH = 'src'
-python scripts/create_smoke_input.py
-python -m smartphone_isp.cli classical --input data/processed/synthetic-smoke.npy --metadata configs/synthetic-metadata.json --output outputs/classical-smoke
-python -m unittest discover -s tests -v
-```
-
-Outputs: `output.png`, floating-point `intermediates.npz`, and `processing.json` with selected settings and array-processing latency. Synthetic input is a plumbing check, not a benchmark. Use `--fixed` for non-adaptive parameters. `--key x` selects an array from a MAT/NPZ container.
-
-Metadata JSON must explicitly provide `normalized`, `bayer_pattern`, `white_balance`, and `camera_to_linear_srgb`. Unnormalized arrays additionally require scalar `black_level` and `white_level`. Identity matrices in the synthetic example are not real camera calibration.
-
-## Dataset acquisition
-
-`python scripts/download_sidd_subset.py --scenes 3` downloads one noisy/clean RAW pair per physical scene from a pinned revision of the [SIDD-CC research derivative](https://huggingface.co/datasets/MhdMohammadi/SIDD-CC), with source URLs, size checks, LFS checksums where provided, and SHA-256 provenance in the ignored dataset folder. It reuses existing verified files. Use `--scenes 5` through `--scenes 10` to expand later. This is not the original SIDD Small release. The original download endpoint timed out during setup.
-
-The clean sample used for initial ISP validation comes from the [SIDD authors' reference repository](https://github.com/AbdoKamel/simple-camera-pipeline/tree/master/data). `scripts/prepare_sidd_reference.py` prepares that sample if the two reference MAT files are present. Its single-illuminant colour transform is approximate, preserves sensor orientation, and is not an exact reproduction of SIDD's sRGB rendering.
-
-After installing the `raw` optional dependencies, prepare and process the paired development subset:
-
-```powershell
-python scripts/download_sidd_subset.py
-python scripts/prepare_sidd_subset.py
-python -m smartphone_isp.cli classical --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --output outputs/sidd-cc-classical
-```
-
-The legacy single-pair preparation command above remains a development-only example. For the scene-separated pilot, follow the commands below. No independently captured RGB reference is supplied here; targets are fixed renders of clean RAW. Independent registration and colour calibration remain pending.
-
-## Prepare, train, and inspect the CPU pilot
-
-Install the `raw` and `train` optional dependencies first. Run from the repository root:
-
-```powershell
-$env:PYTHONPATH = 'src'
-python scripts/download_sidd_subset.py --scenes 3
-python scripts/prepare_training_data.py
-python -m smartphone_isp.training.train --config configs/pilot.yaml
-python -m smartphone_isp.evaluation.pilot
-python -m unittest discover -s tests -v
-```
-
-The default prepares 24 deterministic 128x128 patches: eight from each of three physical scenes. Assignments are saved before extraction; patches from one scene cannot enter multiple splits. The pilot has one training scene, one validation scene, and one held-out test scene. Crops have even Bayer offsets and use a four-pixel processing border, removed before training. No augmentation is currently applied.
-
-Inputs and targets use the same approximate camera transform in linear RGB. Display exposure is selected using the noisy input and reused for the target. Training uses L1 plus gradient consistency; the checkpoint is selected by validation linear-RGB L1 among trained epochs. The test split is not loaded during training. A manifest checksum guards evaluation against mismatched training data.
-
-Artifacts: `checkpoints/pilot-best.pt`, `runs/pilot/training.json`, `outputs/pilot-evaluation/evaluation.json`, and comparison PNGs ordered **classical | hybrid | clean-RAW render**. The comparison targets and tiny scene count cannot establish real-world colour accuracy. See `reports/pilot_summary.md` for the observed underperformance.
-
-Run hybrid inference using the locally trained checkpoint:
-
-```powershell
-python -m smartphone_isp.cli hybrid --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --checkpoint checkpoints/pilot-best.pt --output outputs/hybrid-pilot
-```
-
-Hybrid inference still computes a redundant classical bilateral result during preparation; its current latency is not an optimized model benchmark. Model weights, data, and generated results are kept out of Git.
-
-## Reproducibility
-
-Split by scene before cropping patches. Record dataset versions, split manifests, configuration, random seed, source revision, checkpoint, output colour encoding, and benchmark hardware with every experiment. Never report placeholders as evaluation results.
-
-## Expanded three-way comparison
-
-This extends training with two scenes while preserving the original validation/test scenes and their patch values. Run from the repository root after installing `raw` and `train` extras:
-
-```powershell
-$env:PYTHONPATH = 'src'
-python scripts/download_sidd_subset.py --scenes 5
-python scripts/prepare_training_data.py --output data/processed/expanded --existing-splits configs/pilot-splits.json
-python -m smartphone_isp.training.train --config configs/expanded-hybrid.yaml
-python -m smartphone_isp.training.train --config configs/expanded-learned.yaml
-python -m smartphone_isp.evaluation.pilot --manifest data/processed/expanded/manifest.json --checkpoint checkpoints/expanded-hybrid.pt --learned-checkpoint checkpoints/expanded-learned.pt --output outputs/expanded-comparison
-```
-
-Forty 128x128 patches: 24 training (three scenes), eight validation, eight test. The learned-only network uses normalized packed Bayer plus white-balance gains, colour-matrix values, and CFA phase as metadata inputs. It learns demosaicing/colour reconstruction; no classical colour or denoising stages precede it. Both models predict linear RGB and use the same training objective. A common display transform uses noisy-input exposure and sharpening for all compared outputs. The target uses that exposure without sharpening.
-
-The expanded configs execute 20 CPU epochs with validation-only checkpoint selection. The exploratory test scene was already inspected in the earlier pilot; this is not a new final holdout. Comparison PNG order: **classical | learned-only | hybrid | clean-RAW render**. Results and observed artifacts are documented in `reports/expanded_pilot_summary.md`.
-
-Standalone learned-only inference (fixed post-network display exposure):
-
-```powershell
-python -m smartphone_isp.cli learned --input data/processed/sidd-cc-subset/noisy.npy --metadata data/processed/sidd-cc-subset/metadata.json --checkpoint checkpoints/expanded-learned.pt --exposure 3 --output outputs/learned-expanded
-```
-
-The standalone default exposure is 1; use the evaluator for the shared three-way display settings. No adaptive classical preprocessing is used in the learned-only path.
-
-## Shared-context decoder comparison (validation only)
-
-The earlier pilot reports are historical. Use the following protocol for further development: both networks receive the same four-pixel RAW border as classical processing, and their output border is removed before training loss or comparison. The 128x128 targets are unchanged. The previous central-input recipe remains reproducible with `--input-context 0` (the legacy default).
-
-```powershell
-$env:PYTHONPATH = 'src'
-python scripts/prepare_training_data.py --output data/processed/context --existing-splits configs/pilot-splits.json --input-context 4
-python -m smartphone_isp.training.train --config configs/context-hybrid.yaml
-python -m smartphone_isp.training.train --config configs/context-subpixel.yaml
-python -m smartphone_isp.training.train --config configs/context-resize.yaml
-python -m smartphone_isp.evaluation.pilot --manifest data/processed/context/manifest.json --checkpoint checkpoints/context-hybrid.pt --learned-checkpoint checkpoints/context-subpixel.pt --split validation --output outputs/context-subpixel-validation
-python -m smartphone_isp.evaluation.pilot --manifest data/processed/context/manifest.json --checkpoint checkpoints/context-hybrid.pt --learned-checkpoint checkpoints/context-resize.pt --split validation --output outputs/context-resize-validation
-```
-
-The raw files must first be present (`download_sidd_subset.py --scenes 5`). Both decoder recipes use the same backbone, training scenes, seed, objective, batch size, learning rate, and 20-epoch budget; output heads and parameter counts differ. Checkpoints retain separate format identifiers, and old pixel-shuffle checkpoints continue to load.
-
-In this validation check, learned-only PSNR improved from 15.70 dB (pixel-shuffle v1) to 19.38 dB (resize/convolution v2). The diagnostic 2x2 residual phase bias decreased substantially, but v2 still oversmooths details. Classical achieved 31.80 dB and hybrid 27.16 dB on the same validation patches. These scores are from a different split than the earlier test scores and must not be directly compared to them. No new test score was computed for this architecture change. See `reports/context_decoder_summary.md`.
-
-For v2 standalone inference, pass `--checkpoint checkpoints/context-resize.pt` to the existing `learned` command. Its CLI still returns full sensor-sized RGB; the four-pixel crop applies only to prepared patch targets during training/evaluation.
+Team **T47**: **1RUA24CSE0371, 1RUA24CSE0365**. Identity is saved in `configs/team.json` and used by the report generator. The submission report is `eval_P2_T47.md`, with comma-separated USNs on its first line. A public hosted URL and actual team demo/viva remain submission actions. Historical pilot reports retain earlier results; the final report supersedes their current-quality conclusions.

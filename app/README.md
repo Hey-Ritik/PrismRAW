@@ -1,3 +1,5 @@
-# Demo application
+# Local camera-lab application
 
-Implement the UI after classical inference is validated. The UI should upload supported RAW data, show classical/learned/hybrid outputs and intermediate stages, and display actual timings. Hide unavailable model modes until trained checkpoints exist. Reference metrics require a matching ground-truth image.
+`src/smartphone_isp/app/server.py` exposes a FastAPI service; `engine.py` runs bounded inference and packages results. `app/static/` is the responsive browser UI. Launch with `./run_local.ps1` and open http://127.0.0.1:7860 after model/LPIPS warmup.
+
+The app has sample scenes, DNG/array uploads, four output modes, optional reference metrics, stage previews, zoom, adaptive controls, measured evaluation summaries and result ZIP downloads. Uploaded array metadata is required; no JPEG-as-RAW or unreferenced quality scores are invented. See docs/deployment.md for limits, privacy, asset requirements and container packaging.

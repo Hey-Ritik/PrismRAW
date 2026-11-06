@@ -1,21 +1,23 @@
-# Architecture
-
-Classical array inference, paired training, learned-only packed-Bayer reconstruction, and checkpoint-based hybrid inference are implemented. The learned-only network supports versioned subpixel-v1 and resize/convolution-v2 output heads. Schema 3 gives all paths the same RAW context and crops neural outputs to central targets. Direct DNG decoding and deployment optimization remain pending. Locally generated pilot weights are Git-ignored; classical remains the strongest pilot method.
+# Implemented architecture
 
 ```mermaid
 flowchart TD
-    A[RAW + metadata] --> B[Decode and validated normalization]
+    A[DNG or Bayer array + metadata] --> B[Explicit sensor decoding and normalization]
     B --> C[Noise / illumination estimates]
-    B --> D[White balance + demosaicing + camera colour transform]
-    D --> E[Classical edge-preserving denoiser]
-    D --> F[Learned residual refinement]
-    C --> F
-    E --> G[Tone mapping + output encoding + sharpening]
+    B --> D[White balance + bilinear demosaicing + camera colour transform]
+    D --> E[Edge-preserving bilateral denoising]
+    E --> F[Conditioned residual U-Net / FP32 or FP16]
+    E --> G[Adaptive tone mapping + sRGB + controlled sharpening]
     F --> G
-    B --> H[Packed Bayer + camera metadata neural reconstruction]
-    H --> J[Common display rendering]
-    G --> I[Comparison UI and evaluation]
-    J --> I
+    C --> F
+    C --> G
+    B --> H[Packed Bayer + camera features]
+    H --> I[Learned-only resize U-Net RGB reconstruction]
+    I --> G
+    G --> J[Four-way UI, intermediates, downloads and optional metrics]
+    K[Matching clean RAW or registered RGB reference] --> J
 ```
 
-All methods must produce the same target RGB encoding and spatial dimensions. Learned-only and hybrid paths have distinct model/input contracts. Input normalization shared between methods is not an enhancement baseline.
+The common display renderer makes output encoding comparable; learned-only does not use classical demosaicing, white-balance multiplication, matrix multiplication or denoising before its network. Training/evaluation share equal RAW context and crop predictions to central targets. Full app inference returns the selected even-sized sensor crop.
+
+Data preparation freezes physical-scene assignments before patching. Training chooses checkpoints on validation. The optimization step selects residual blending on validation and exports FP16. Fresh-scene quality, ablations/stress tests, isolated CPU benchmarks and registration checks feed measured reports. The app consumes only final weights and small sample crops, not the full training set. Public hosting is separate from this verified local architecture.
