@@ -1,0 +1,106 @@
+{
+  "scope": "Fresh same-machine isolated CPU processes, 256x256 sensor crop, 3 warmups and 20 measured runs, 2 torch threads. Excludes model load, file IO, network and quality metrics. Not Render or smartphone latency. Historical benchmark unchanged.",
+  "before": {
+    "classical": {
+      "median_ms": 62.51840000186348,
+      "p95_ms": 85.5318400048418,
+      "peak_process_rss_mib": 197.71484375,
+      "incremental_peak_rss_mib": 5.95703125,
+      "parameters": 0,
+      "model_bytes": 0,
+      "iterations": 20,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "float32"
+    },
+    "learned": {
+      "median_ms": 22.84805000090273,
+      "p95_ms": 29.716635001750547,
+      "peak_process_rss_mib": 239.1328125,
+      "incremental_peak_rss_mib": 2.3046875,
+      "parameters": 123459,
+      "model_bytes": 503183,
+      "iterations": 20,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float32"
+    },
+    "hybrid": {
+      "median_ms": 103.69250000076136,
+      "p95_ms": 125.93619000217588,
+      "peak_process_rss_mib": 275.7578125,
+      "incremental_peak_rss_mib": 9.03515625,
+      "parameters": 118595,
+      "model_bytes": 483245,
+      "iterations": 20,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float32"
+    }
+  },
+  "after": {
+    "classical": {
+      "median_ms": 44.39379999530502,
+      "p95_ms": 51.910884994867956,
+      "peak_process_rss_mib": 197.4921875,
+      "incremental_peak_rss_mib": 6.28515625,
+      "parameters": 0,
+      "model_bytes": 0,
+      "iterations": 20,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "float32"
+    },
+    "learned": {
+      "median_ms": 22.420649998821318,
+      "p95_ms": 24.24396999667806,
+      "peak_process_rss_mib": 238.73046875,
+      "incremental_peak_rss_mib": 2.28515625,
+      "parameters": 123459,
+      "model_bytes": 503183,
+      "iterations": 20,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float32"
+    },
+    "hybrid": {
+      "median_ms": 77.83465000102296,
+      "p95_ms": 85.31166499487883,
+      "peak_process_rss_mib": 272.13671875,
+      "incremental_peak_rss_mib": 3.5859375,
+      "parameters": 118595,
+      "model_bytes": 483245,
+      "iterations": 20,
+      "warmups": 3,
+      "input_shape": [
+        256,
+        256
+      ],
+      "precision": "torch.float32"
+    }
+  },
+  "output_equivalence": "Exact equality for bilateral float32/float64 cases, four classical demo crops, and a hybrid crop against the previous implementation.",
+  "quality_metrics_disabled": false,
+  "production_weights_changed": false,
+  "platform": "Windows-11-10.0.26300-SP0",
+  "median_reduction_percent": {
+    "classical": 28.990825110716568,
+    "learned": 1.8706191647187667,
+    "hybrid": 24.937049448656875
+  }
+}

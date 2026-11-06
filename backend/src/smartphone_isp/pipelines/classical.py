@@ -30,19 +30,30 @@ def demosaic(raw, pattern):
 
 
 def bilateral(image, sigma):
-    """Small 5x5 edge-preserving baseline; not optimized for mobile inference."""
+    """5x5 edge-preserving filter with reusable float buffers."""
     if sigma <= 0:
         return image.copy()
     h, w = image.shape[:2]
     pad = np.pad(image, ((2, 2), (2, 2), (0, 0)), mode="reflect")
     numerator = np.zeros_like(image)
     denominator = np.zeros((h, w, 1), dtype=np.float32)
+    scratch = np.empty_like(image)
+    distance = np.empty((h, w), dtype=image.dtype)
     for y in range(5):
         for x in range(5):
             neighbor = pad[y:y+h, x:x+w]
-            distance = np.mean((neighbor - image) ** 2, axis=-1, keepdims=True)
-            weight = np.exp(-distance / (2 * sigma**2) - ((y-2)**2 + (x-2)**2) / 4)
-            numerator += weight * neighbor
+            np.subtract(neighbor, image, out=scratch)
+            np.square(scratch, out=scratch)
+            np.add(scratch[..., 0], scratch[..., 1], out=distance)
+            distance += scratch[..., 2]
+            distance /= 3
+            np.negative(distance, out=distance)
+            distance /= 2 * sigma**2
+            distance -= ((y-2)**2 + (x-2)**2) / 4
+            np.exp(distance, out=distance)
+            weight = distance[..., None]
+            np.multiply(weight, neighbor, out=scratch)
+            numerator += scratch
             denominator += weight
     return numerator / denominator
 
@@ -56,12 +67,14 @@ def render_linear(linear, exposure=1.0, sharpen=0.0):
     return np.clip(encoded + sharpen * (encoded - _blur(encoded)), 0, 1), toned, encoded
 
 
-def process(raw, metadata, adaptive=True, denoise=True):
+def process(raw, metadata, adaptive=True, denoise=True, render_output=True):
     """Return display RGB, named intermediates, and measured processing statistics.
 
     Metadata requires normalized(bool), bayer_pattern, white_balance RGB gains,
     and camera_to_linear_srgb (3x3 column-vector convention). For unnormalized
     input, scalar black_level and white_level are also required.
+    Internal hybrid callers can set render_output=False: display output and
+    tone/encoded stages are None until the caller renders its refined image.
     """
     started = time.perf_counter()
     raw = np.asarray(raw, dtype=np.float32)
@@ -102,12 +115,13 @@ def process(raw, metadata, adaptive=True, denoise=True):
     denoised = bilateral(linear, sigma) if denoise else linear.copy()
     exposure = float(np.clip(0.18 / max(median_luma, 1e-4), 0.5, 3)) if adaptive else 1.0
     sharpen = float(0.15 / (1 + 20 * noise)) if adaptive else 0.15
-    output, toned, encoded = render_linear(denoised, exposure, sharpen)
+    # Hybrid callers render after learned refinement; skip the discarded render.
+    output, toned, encoded = render_linear(denoised, exposure, sharpen) if render_output else (None, None, None)
     stages = {"normalized_mosaic": normalized, "balanced_mosaic": balanced,
               "camera_rgb": camera_rgb, "linear_srgb": linear,
               "denoised_linear": denoised, "tone_mapped_linear": toned,
               "encoded_srgb": encoded}
-    stats = {"method": "classical", "adaptive": adaptive, "shape": list(output.shape),
+    stats = {"method": "classical", "adaptive": adaptive, "shape": list(denoised.shape),
              "noise_estimate": noise, "median_linear_luminance": median_luma,
              "bilateral_sigma": sigma, "exposure_gain": exposure,
              "sharpen_strength": sharpen,

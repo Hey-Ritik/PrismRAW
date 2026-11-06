@@ -33,7 +33,7 @@ def refine(model, linear, noise, illumination, device="cpu"):
 def process_hybrid(raw, metadata, model, adaptive=True, device="cpu"):
     started = time.perf_counter()
     use_denoised = getattr(model, "input_stage", "linear") == "denoised"
-    _, stages, stats = process(raw, metadata, adaptive=adaptive, denoise=use_denoised)
+    _, stages, stats = process(raw, metadata, adaptive=adaptive, denoise=use_denoised, render_output=False)
     source = stages["denoised_linear"] if use_denoised else stages["linear_srgb"]
     refined = refine(model, source, stats["noise_estimate"], stats["median_linear_luminance"], device)
     output, toned, encoded = render_linear(refined, stats["exposure_gain"], stats["sharpen_strength"])
