@@ -4,7 +4,9 @@
 
 ## Submission status
 
-Team T47; USNs are recorded on the first line. Engineering evaluation is measured. The app runs locally; a public hosted URL has not been published.
+Team NOCTICS (T47), Section D; members Ritik Singh (1RUA24CSE0371) and Rishab Patil (1RUA24CSE0365). USNs are recorded in the required first-line format. Engineering evaluation is measured.
+
+Public access: [Vercel frontend](https://prismraw-frontend.vercel.app/) and [Render backend](https://prismraw.onrender.com). The frontend is hosted on Vercel and the backend is hosted on Render. The student reports personally testing the deployed application; no specific test cases or outcomes beyond that statement are asserted. This documentation update does not claim independent deployed inference testing or verified Docker build/deployment evidence.
 
 ## Comparative evaluation
 
@@ -84,10 +86,10 @@ These alter the held-out noisy input while retaining the original clean target r
 
 ## Application and reproducibility
 
-Run `.\run_local.ps1` and open http://127.0.0.1:7860. The app supports real sample scenes, DNG and explicit-metadata array uploads, reference metrics, stage previews, bounded central crops, error states, and downloadable PNG/JSON/ZIP results. Source uploads are temporary; generated results are cleaned after one hour on subsequent requests. Models and LPIPS are warmed at startup.
+Public application: [Vercel frontend](https://prismraw-frontend.vercel.app/), with API processing hosted by the [Render backend](https://prismraw.onrender.com). For optional local reproduction, run `.\run_local.ps1` and open http://127.0.0.1:7860. The app supports real sample scenes, DNG and explicit-metadata array uploads, reference metrics, stage previews, bounded central crops, error states, and downloadable PNG/JSON/ZIP results. Source uploads are temporary; generated results are cleaned after one hour on subsequent requests. Models and LPIPS are warmed at startup.
 
 See README.md for exact download, preparation, training, selection, evaluation, benchmark, and packaging commands. Dockerfile is supplied; Docker image build is not claimed as verified unless separately tested. The release bundle contains small demo crops and trained weights; full datasets stay outside Git.
 
-## Remaining submission-only actions
+## Submission documentation
 
-Team identity is complete. Next, publish/verify a public hosted URL and record/rehearse the team demo/viva. A localhost link is not a public hosted submission URL.
+Team identity and public deployment URLs are supplied: [Vercel frontend](https://prismraw-frontend.vercel.app/) and [Render backend](https://prismraw.onrender.com). Complete the six required submission fields and any remaining student-authored observations. The separate [technical solution report](../../docs/submission/Technical_Solution_Report_P2_T47.md) retains its AI-assistance disclosure and unconfirmed contribution placeholders.
